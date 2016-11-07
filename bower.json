@@ -1,0 +1,24 @@
+{
+  "name": "student-check-electron-angular",
+  "description": "AOF Student Chcek-in Client Angular-Electron Branch",
+  "main": "main.js",
+  "authors": [
+    "codetector"
+  ],
+  "license": "ISC",
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "libs",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular": "^1.5.8",
+    "angular-route": "^1.5.8",
+    "font-awesome": "^4.6.3",
+    "bootstrap": "^3.3.7"
+  }
+}
