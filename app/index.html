@@ -1,7 +1,17 @@
 <html ng-app="studentCheck">
-<div ng-controller="cardDisplayCtrl">
-    {{card}}
+<head>
+    <link href="../libs/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="../libs/font-awesome/css/font-awesome.min.css" rel="stylesheet"/>
+    <meta charset="UTF-8">
+    <title>Student Check</title>
+</head>
+<ng-include src="'components/navbar.ng'"></ng-include>
+<div style="margin-top: 70px;">
+    <ng-view></ng-view>
 </div>
 <script src="../libs/angular/angular.min.js"></script>
+<script src="../libs/angular-route/angular-route.min.js"></script>
+<script src="../libs/angular-route-styles/route-styles.js"></script>
+<script src="md5.js"></script>
 <script src="app.js"></script>
 </html>

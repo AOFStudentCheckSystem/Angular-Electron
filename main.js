@@ -4,7 +4,7 @@ const BrowserWindow = electron.BrowserWindow;
 let mainWindow;
 
 function createWindow () {
-    mainWindow = new BrowserWindow({width: 800, height: 600});
+    mainWindow = new BrowserWindow({width: 800, height: 600, titleBarStyle: 'hidden'});
     mainWindow.loadURL(`file://${__dirname}/app/index.html`);
     mainWindow.on('closed', function () {
         // Dereference the window object, usually you would store windows
