@@ -1,0 +1,14 @@
+<div class="container">
+    <div class="row">
+        <div class="col-xs-12 col-sm-6 col-md-4">
+            <a href="#/login">
+                <div class="panel panel-default">
+                    <div class="panel-body text-center">
+                        <i class="fa fa-bus fa-icon" aria-label="hidden"></i>
+                        <h1>Start Check-In</h1>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>

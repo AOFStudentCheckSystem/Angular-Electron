@@ -51,6 +51,13 @@ app.factory("session", function () {
         },
         set: function (jwt) {
             window.sessionStorage.setItem("token",jwt);
+        },
+        isLogged: function () {
+            sessionKey = window.sessionStorage.setItem("token",jwt);
+            return !(sessionKey == undefined || sessionKey == null || sessionKey == '');
+        },
+        isOnline: function () {
+            return navigator.onLine;
         }
     };
 });
@@ -84,6 +91,11 @@ app.config(function ($routeProvider) {
             controller: 'loginCtrl',
             css: 'templates/login.css'
         })
+        .when("/home",{
+            templateUrl: 'templates/home.ng',
+            controller: 'homeCtrl',
+            css: 'templates/home.css'
+        })
         .otherwise({
             templateUrl: 'templates/index.ng',
             controller: 'indexCtrl'
@@ -101,12 +113,15 @@ app.controller('loginCtrl',function ($scope, $http, session) {
         $http.post(domain+"api/auth",{username:$scope.username, password:calcMD5($scope.password)})
             .then(function (result) {
                 session.set(result.data.token);
+                window.location.href="#/home"
             },
             function (failResult) {
                 $scope.password = "";
                 alert("Sign In Failed");
             });
     }
+});
+app.controller('homeCtrl',function ($scope, $http, session) {
 
 });
 // app.controller("cardDisplayCtrl",function ($scope) {
