@@ -46,11 +46,11 @@ var app = angular.module("studentCheck",['ngRoute','routeStyles'], function ($ht
 });
 app.factory("session", function () {
     return {
-        get: function () {
-            return window.sessionStorage.getItem("token");
+        get: function (key) {
+            return window.sessionStorage.getItem(key);
         },
-        set: function (jwt) {
-            window.sessionStorage.setItem("token",jwt);
+        set: function (key,value) {
+            window.sessionStorage.setItem(key,value);
         }
     };
 });
@@ -63,8 +63,8 @@ app.factory('httpInterceptor', ['$q', '$injector','session', function ($q, $inje
             return response;
         },
         'request': function (config) {
-            if(session.get() !== undefined && session.get() != ""){
-                config.headers['Authorization'] = session.get();
+            if(session.get("token") !== undefined && session.get("token") != ""){
+                config.headers['Authorization'] = session.get("token");
             }
             return config;
         },
@@ -84,14 +84,25 @@ app.config(function ($routeProvider) {
             controller: 'loginCtrl',
             css: 'templates/login.css'
         })
+        .when("/home",{
+            templateUrl: 'templates/home.ng'
+        })
         .otherwise({
             templateUrl: 'templates/index.ng',
             controller: 'indexCtrl'
         });
 
 });
-app.controller("navbarCtrl",function ($scope, $http) {
-
+app.controller("navbarCtrl",function ($scope, $http, session) {
+    $scope.$watch(
+        function () {
+            return session.get("token")!=null;
+        },
+        function (newVal, oldVal) {
+            $scope.isLoggedIn = newVal;
+            $scope.$apply();
+        }
+    );
 });
 app.controller('indexCtrl',function ($scope, $http, session) {
     window.location.href="#/login";
@@ -100,13 +111,18 @@ app.controller('loginCtrl',function ($scope, $http, session) {
     $scope.login = function(){
         $http.post(domain+"api/auth",{username:$scope.username, password:calcMD5($scope.password)})
             .then(function (result) {
-                session.set(result.data.token);
+                session.set("token",result.data.token);
+                window.location.href="#/home";
             },
             function (failResult) {
                 $scope.password = "";
                 alert("Sign In Failed");
             });
     }
+
+});
+
+app.controller('homeCtrl',function ($scope, session) {
 
 });
 // app.controller("cardDisplayCtrl",function ($scope) {

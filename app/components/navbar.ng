@@ -4,7 +4,7 @@
             <a href="#" class="navbar-brand">AOF Student Check-in Client</a>
         </div>
         <ul class="nav navbar-nav navbar-right">
-            <li><a>Login Status</a></li>
+            <li><a>Login Status: {{isLoggedIn}}</a></li>
         </ul>
     </div>
 </nav>
