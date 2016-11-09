@@ -85,7 +85,8 @@ app.config(function ($routeProvider) {
             css: 'templates/login.css'
         })
         .when("/home",{
-            templateUrl: 'templates/home.ng'
+            templateUrl: 'templates/home.ng',
+            css: 'templates/home.css'
         })
         .otherwise({
             templateUrl: 'templates/index.ng',
@@ -94,13 +95,13 @@ app.config(function ($routeProvider) {
 
 });
 app.controller("navbarCtrl",function ($scope, $http, session) {
-    $scope.$watch(
+    $scope.$watchCollection(
         function () {
-            return session.get("token")!=null;
+            return [session.get("token")!=null, session.get("username")];
         },
         function (newVal, oldVal) {
-            $scope.isLoggedIn = newVal;
-            $scope.$apply();
+            $scope.isLoggedIn = newVal[0];
+            $scope.username = newVal[1];
         }
     );
 });
@@ -108,14 +109,18 @@ app.controller('indexCtrl',function ($scope, $http, session) {
     window.location.href="#/login";
 });
 app.controller('loginCtrl',function ($scope, $http, session) {
+    $scope.isLoggingIn = false;
     $scope.login = function(){
+        $scope.isLoggingIn = true;
         $http.post(domain+"api/auth",{username:$scope.username, password:calcMD5($scope.password)})
             .then(function (result) {
                 session.set("token",result.data.token);
+                session.set("username",$scope.username);
                 window.location.href="#/home";
             },
             function (failResult) {
                 $scope.password = "";
+                $scope.isLoggingIn = false;
                 alert("Sign In Failed");
             });
     }

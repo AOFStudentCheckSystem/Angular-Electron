@@ -5,8 +5,18 @@
     <meta charset="UTF-8">
     <title>Student Check</title>
 </head>
+<style>
+    .mainView{
+        margin-top: 70px;
+    }
+    @media (max-width: 768px) {
+        .mainView{
+            margin-top: 140px;
+        }
+    }
+</style>
 <ng-include src="'components/navbar.ng'"></ng-include>
-<div style="margin-top: 70px;">
+<div class="mainView">
     <ng-view></ng-view>
 </div>
 <script src="../libs/angular/angular.min.js"></script>
