@@ -88,6 +88,9 @@ app.config(function ($routeProvider) {
             templateUrl: 'templates/home.ng',
             css: 'templates/home.css'
         })
+        .when("/event",{
+            templateUrl: 'templates/event.ng'
+        })
         .otherwise({
             templateUrl: 'templates/index.ng',
             controller: 'indexCtrl'
@@ -129,6 +132,10 @@ app.controller('loginCtrl',function ($scope, $http, session) {
 
 app.controller('homeCtrl',function ($scope, session) {
 
+});
+
+app.controller('eventCtrl',function ($scope) {
+    $scope.contentInfo = [['whatever','What what whatasdfdsf'],['whatever','What what whatasdfdsf'],['whatever','What what whatasdfdsf']];
 });
 // app.controller("cardDisplayCtrl",function ($scope) {
 //     $scope.card = "No Reader";

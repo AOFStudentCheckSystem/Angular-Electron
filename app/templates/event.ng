@@ -1,0 +1,20 @@
+<div class="container" style="max-width: 700px;">
+    <div class="row" ng-controller="eventCtrl">
+        <div class="col-xs-12">
+            <div class="list-group">
+                <a class="list-group-item" ng-repeat="content in contentInfo">
+                    <h4 class="list-group-item-heading">{{content[0]}}</h4>
+                    <p class="list-group-item-text">{{content[1]}}</p>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12 col-sm-6" style="margin-bottom:10px">
+            <button class="btn btn-danger btn-block">Complete Event</button>
+        </div>
+        <div class="col-xs-12 col-sm-6">
+            <button class="btn btn-primary btn-block">Continue</button>
+        </div>
+    </div>
+</div>
