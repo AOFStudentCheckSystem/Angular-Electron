@@ -1,11 +1,14 @@
 <div class="container" style="max-width: 700px;">
     <div class="row" ng-controller="eventCtrl">
         <div class="col-xs-12">
+            <h1>{{selected}}</h1>
             <div class="list-group">
-                <a class="list-group-item" ng-repeat="content in contentInfo">
-                    <h4 class="list-group-item-heading">{{content[0]}}</h4>
-                    <p class="list-group-item-text">{{content[1]}}</p>
+                <div style="max-height: 70vh; overflow-y: scroll">
+                <a class="list-group-item" ng-repeat="event in events" ng-click="selectItem($index)" ng-class="{active: isActive($index)}">
+                    <h4 class="list-group-item-heading">{{event.eventName}}</h4>
+                    <p class="list-group-item-text"></p>
                 </a>
+                </div>
             </div>
         </div>
     </div>

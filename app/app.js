@@ -64,7 +64,7 @@ app.factory('httpInterceptor', ['$q', '$injector','session', function ($q, $inje
         },
         'request': function (config) {
             if(session.get("token") !== undefined && session.get("token") != ""){
-                config.headers['Authorization'] = session.get("token");
+                config.headers['Authorization'] = "Bearer " + session.get("token");
             }
             return config;
         },
@@ -134,8 +134,17 @@ app.controller('homeCtrl',function ($scope, session) {
 
 });
 
-app.controller('eventCtrl',function ($scope) {
-    $scope.contentInfo = [['whatever','What what whatasdfdsf'],['whatever','What what whatasdfdsf'],['whatever','What what whatasdfdsf']];
+app.controller('eventCtrl',function ($scope, $http) {
+    $scope.events = [];
+    $http.get(domain+"api/event/list").then(function (successReturn) {
+        $scope.events = successReturn.data.events;
+    });
+    $scope.selectItem = function (item) {
+        $scope.selected = item;
+    };
+    $scope.isActive = function(item) {
+        return $scope.selected === item;
+    };
 });
 // app.controller("cardDisplayCtrl",function ($scope) {
 //     $scope.card = "No Reader";
