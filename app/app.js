@@ -91,13 +91,16 @@ app.config(function ($routeProvider) {
             css: 'templates/home.css'
         })
         .when("/event",{
-            templateUrl: 'templates/event.ng'
+            templateUrl: 'templates/event.ng',
+            controller: 'eventCtrl'
+        })
+        .when("/checkin/:event",{
+            templateUrl: 'templates/checkin.ng'
         })
         .otherwise({
             templateUrl: 'templates/index.ng',
             controller: 'indexCtrl'
         });
-
 });
 app.controller("navbarCtrl",function ($scope, $http, session) {
     $scope.$watchCollection(
@@ -131,11 +134,9 @@ app.controller('loginCtrl',function ($scope, $http, session) {
             });
     }
 });
-
 app.controller('homeCtrl',function ($scope, session) {
 
 });
-
 app.controller('eventCtrl',function ($scope, $http) {
     $scope.events = [];
     $http.get(domain+"api/event/list").then(function (successReturn) {
@@ -145,8 +146,15 @@ app.controller('eventCtrl',function ($scope, $http) {
         $scope.selected = item;
     };
     $scope.isActive = function(item) {
-        return $scope.selected === item;
+        return $scope.selected == item;
     };
+    $scope.continueEvent = function () {
+        window.location.href = "#/checkin/"+JSON.stringify($scope.events[$scope.selected]);
+        console.log("#/checkin/"+JSON.stringify($scope.events[$scope.selected]));
+    }
+});
+app.controller('checkinCtrl',function ($routeParams) {
+    console.log("receive:"+$routeParams.event.eventId);
 });
 // app.controller("cardDisplayCtrl",function ($scope) {
 //     $scope.card = "No Reader";
