@@ -1,10 +1,13 @@
 <nav class="navbar navbar-inverse navbar-fixed-top" ng-controller="navbarCtrl">
     <div class="container-fluid" style="margin-top: 5px;">
-        <div class="navbar-header">
-            <a href="#" class="navbar-brand">AOF Student Check-in Client</a>
-        </div>
+        <!--<div class="navbar-header">-->
+            <!--<a href="#" class="navbar-brand">AOF Student Check-in Client</a>-->
+        <!--</div>-->
+        <ul class="nav navbar-left navbar-nav">
+            <li><a style="font-size: larger" ng-click="goBack()"><i class="fa fa-chevron-left"></i> Go Back</a></li>
+        </ul>
         <ul class="nav navbar-nav navbar-right">
-            <li><a>{{isLoggedIn?("Welcome, "+username):"You did not login"}}</a></li>
+            <li><a style="font-size: large">{{isLoggedIn?("Welcome, "+username):"You did not login"}}</a></li>
         </ul>
     </div>
 </nav>

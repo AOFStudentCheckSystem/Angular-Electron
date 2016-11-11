@@ -54,6 +54,7 @@ app.factory("session", function () {
         }
     };
 });
+
 app.factory('httpInterceptor', ['$q', '$injector','session', function ($q, $injector ,session) {
     var httpInterceptor = {
         'responseError': function (response) {
@@ -74,6 +75,7 @@ app.factory('httpInterceptor', ['$q', '$injector','session', function ($q, $inje
     };
     return httpInterceptor;
 }]);
+
 app.config(['$httpProvider', function ($httpProvider) {
     $httpProvider.interceptors.push('httpInterceptor');
 }]);
@@ -107,6 +109,7 @@ app.controller("navbarCtrl",function ($scope, $http, session) {
             $scope.username = newVal[1];
         }
     );
+    $scope.goBack = function(){window.history.back();};
 });
 app.controller('indexCtrl',function ($scope, $http, session) {
     window.location.href="#/login";
@@ -119,7 +122,7 @@ app.controller('loginCtrl',function ($scope, $http, session) {
             .then(function (result) {
                 session.set("token",result.data.token);
                 session.set("username",$scope.username);
-                window.location.href="#/home";
+                    window.location.href="#/home";
             },
             function (failResult) {
                 $scope.password = "";
@@ -127,7 +130,6 @@ app.controller('loginCtrl',function ($scope, $http, session) {
                 alert("Sign In Failed");
             });
     }
-
 });
 
 app.controller('homeCtrl',function ($scope, session) {

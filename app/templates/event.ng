@@ -1,10 +1,10 @@
 <div class="container" style="max-width: 700px;">
     <div class="row" ng-controller="eventCtrl">
         <div class="col-xs-12">
-            <h1>{{selected}}</h1>
+            <!--<h1>{{selected}}</h1>-->
             <div class="list-group">
                 <div style="max-height: 70vh; overflow-y: scroll">
-                <a class="list-group-item" ng-repeat="event in events" ng-click="selectItem($index)" ng-class="{active: isActive($index)}">
+                <a class="list-group-item" ng-repeat="event in events | fliter:events.eventStatus != 2" ng-click="selectItem($index)" ng-class="{active: isActive($index)}">
                     <h4 class="list-group-item-heading">{{event.eventName}}</h4>
                     <p class="list-group-item-text"></p>
                 </a>

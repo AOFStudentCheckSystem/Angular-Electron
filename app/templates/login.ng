@@ -14,7 +14,7 @@
                            placeholder="password" required>
                     <br>
                     <button type="submit" class="btn btn-block btn-primary" ng-disabled="isLoggingIn || username==null || password==null">
-                        {{isLoggingIn?"Singing In":"Sign In"}}
+                        {{isLoggingIn?"Signing In":"Sign In"}}
                     </button>
                 </form>
             </div>
