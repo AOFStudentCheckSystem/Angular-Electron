@@ -95,7 +95,8 @@ app.config(function ($routeProvider) {
             controller: 'eventCtrl'
         })
         .when("/checkin/:event",{
-            templateUrl: 'templates/checkin.ng'
+            templateUrl: 'templates/checkin.ng',
+            controller: 'checkinCtrl'
         })
         .otherwise({
             templateUrl: 'templates/index.ng',
@@ -150,12 +151,13 @@ app.controller('eventCtrl',function ($scope, $http) {
     };
     $scope.continueEvent = function () {
         window.location.href = "#/checkin/"+JSON.stringify($scope.events[$scope.selected]);
-        console.log("#/checkin/"+JSON.stringify($scope.events[$scope.selected]));
+        //console.log("#/checkin/"+JSON.stringify($scope.events[$scope.selected]));
     }
 });
-app.controller('checkinCtrl',function ($routeParams) {
-    console.log("receive:"+$routeParams.event.eventId);
-});
+app.controller('checkinCtrl',['$routeParams','$scope',function ($routeParams,$scope) {
+    $scope.event = JSON.parse($routeParams.event);
+    console.log("receive:"+$scope.event.eventId);
+}]);
 // app.controller("cardDisplayCtrl",function ($scope) {
 //     $scope.card = "No Reader";
 //     $scope.card1 = "NN";
