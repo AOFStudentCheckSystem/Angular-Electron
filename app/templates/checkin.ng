@@ -22,7 +22,7 @@
             <div class="list-group" style="overflow-y: scroll; max-height: 85vh;">
                 <a class="list-group-item" ng-repeat="student in students | filter:searchFilter">
                     <h4 class="list-group-item-heading">{{student.lastName}}, {{student.firstName}}</h4>
-                    <p class="list-group-item-text">{{isRemove($index)}}</p>
+                    <p class="list-group-item-text">{{addRemove($index)}}</p>
                 </a>
             </div>
         </div>

@@ -325,14 +325,14 @@ app.controller('checkinCtrl',function ($scope, session, syncManager, $rootScope)
             });
         });
     });
-    $scope.isRemove = function(idx){
+    $scope.addRemove = function(idx){
         if ($scope.q !== ''){
             for (var i = 0; i < $scope.allStudents.length; i++){
-                if ($scope.allStudents[i].id === $scope.students[idx].id){
-                    return true;
+                if ($scope.allStudents[i].id === $scope.students[idx].studentId){
+                    return 'Remove';
                 }
             }
-            return false;
+            return 'Add';
         }
         return null;
     };
