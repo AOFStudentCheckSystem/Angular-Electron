@@ -4,7 +4,7 @@
             <img src="http://placekitten.com/g/300/450"/>
             <h2>First Name</h2>
             <h2>Last Name</h2>
-            <h2>Count: {{students.length}}</h2>
+            <h2>Count: {{getCheckinLen()}}</h2>
         </div>
         <div class="col-xs-6">
             <!--<div class="input-group" style="margin-bottom: 10px;">-->
@@ -22,7 +22,7 @@
             <div class="list-group" style="overflow-y: scroll; max-height: 85vh;">
                 <a class="list-group-item" ng-repeat="student in students | filter:searchFilter">
                     <h4 class="list-group-item-heading">{{student.lastName}}, {{student.firstName}}</h4>
-                    <p class="list-group-item-text">{{addRemove($index)}}</p>
+                    <p class="list-group-item-text">{{addRemove(student)}}</p>
                 </a>
             </div>
         </div>
