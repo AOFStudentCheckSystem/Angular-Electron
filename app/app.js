@@ -51,9 +51,7 @@ app.factory("session", function () {
             return window.sessionStorage.getItem(key);
         },
         set: function (key,value) {
-            window.sessionStorage.setItem(key,value);
-        set: function (jwt) {
-            window.sessionStorage.setItem("token",jwt);
+            window.sessionStorage.setItem(key, value);
         },
         isLogged: function () {
             sessionKey = window.sessionStorage.setItem("token",jwt);
@@ -146,7 +144,7 @@ app.config(function ($routeProvider) {
             templateUrl: 'templates/event.ng',
             controller: 'eventCtrl'
         })
-        .when("/checkin",{
+        .when("/checkin/:eventId",{
             templateUrl: 'templates/checkin.ng',
             controller: 'checkinCtrl'
         })
@@ -298,7 +296,7 @@ app.controller('homeCtrl',function ($rootScope) {
     });
 });
 app.controller('eventCtrl',function ($scope, $http, session) {
-    $scope.selected = -1;
+    $scope.selected = undefined;
     $scope.events = [];
     $http.get(domain+"api/event/list").then(function (successReturn) {
         $scope.events = successReturn.data.events;
@@ -313,16 +311,18 @@ app.controller('eventCtrl',function ($scope, $http, session) {
         if($scope.selected < 0){
             alert("Please select a event!");
         }else {
-            session.set('currentEvent',JSON.stringify($scope.events[$scope.selected]));
-            window.location.href = "#/checkin";
+            // session.set('currentEvent',JSON.stringify($scope.events[$scope.selected]));
+            console.log($scope.selected.eventId);
+            window.location.href = "#/checkin/"+$scope.selected.eventId;
         }
     };
     $scope.activeFilter = function(event) {
         return event.eventStatus != 2;
     };
 });
-app.controller('checkinCtrl',function ($scope, session, syncManager, $rootScope) {
+app.controller('checkinCtrl',function ($scope, $routeParams, session, syncManager, $rootScope) {
     $scope.students=[];
+    eventId = $routeParams.eventId;
     $rootScope.db.all("SELECT * FROM `StudentInfo`",function(err,rows){
         rows.forEach(function (row) {
             $scope.students.push({
@@ -335,9 +335,9 @@ app.controller('checkinCtrl',function ($scope, session, syncManager, $rootScope)
                 dorm:row.dorm
             });
         });
-        syncManager.downloadEventStudent($scope.event.eventId, function (ret) {
-            if (ret != false){
-                for (var i = 0; i < ret.length; i++){
+        syncManager.downloadEventStudent(eventId, function (ret) {
+            if (ret != false) {
+                for (var i = 0; i < ret.length; i++) {
                     // const j = i;
                     // $rootScope.db.get("SELECT * FROM `StudentInfo` WHERE `id` = ?", [ret[j].studentId], function (error, rowa) {
                     //     ret[j].firstName = rowa.firstName;
@@ -345,8 +345,8 @@ app.controller('checkinCtrl',function ($scope, session, syncManager, $rootScope)
                     //     $scope.students.push(ret[j]);
                     //     $scope.$apply();
                     // });
-                    for (var k = 0; k < $scope.students.length; k++){
-                        if ($scope.students[k].id === ret[i].studentId){
+                    for (var k = 0; k < $scope.students.length; k++) {
+                        if ($scope.students[k].id === ret[i].studentId) {
                             $scope.students[k].inTime = ret[i].checkinTime;
                             $scope.students[k].outTime = ret[i].checkoutTime;
                             break;
@@ -354,21 +354,6 @@ app.controller('checkinCtrl',function ($scope, session, syncManager, $rootScope)
                     }
                 }
             }
-            // if (ret!=false){
-            //     var fn,ln;
-            //     for (var i = 0; i < ret.length; i++){
-            //         const j = i;
-            //         $rootScope.db.get("SELECT * FROM `StudentInfo` WHERE `id` = ?",[ret[i].studentId],function (error,rowa) {
-            //             fn = rowa.firstName;
-            //             ln = rowa.lastName;
-            //             ret[j]['firstName'] = fn;
-            //             ret[j]['lastName'] = ln;
-            //             $scope.students = ret;
-            //             console.log($scope.students);
-            //         });
-            //     }
-            // }
-
         });
     });
     $scope.addRemove = function(student){
@@ -385,8 +370,6 @@ app.controller('checkinCtrl',function ($scope, session, syncManager, $rootScope)
         return null;
     };
     $scope.q = '';
-    $scope.event = JSON.parse(session.get('currentEvent'));
-    // console.log("receive:"+$scope.event.eventId);
     $scope.students = [];
     $scope.searchFilter = function(student){
         return student.inTime != '' && student.outTime == '' && student.lastName.substring(0,$scope.q.length).toLowerCase() === $scope.q.toLowerCase();
