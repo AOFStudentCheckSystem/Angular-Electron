@@ -313,7 +313,8 @@ app.controller('eventCtrl',function ($scope, $http, session) {
     };
 });
 app.controller('checkinCtrl',function ($scope, session, syncManager, $rootScope) {
-    $scope.students=[];
+    $scope.students = [];
+    //get everyone into students array
     $rootScope.db.all("SELECT * FROM `StudentInfo`",function(err,rows){
         rows.forEach(function (row) {
             $scope.students.push({
@@ -362,25 +363,27 @@ app.controller('checkinCtrl',function ($scope, session, syncManager, $rootScope)
 
         });
     });
+
+    $scope.q = '';
+
+    $scope.event = JSON.parse(session.get('currentEvent'));
+    console.log("receive:"+$scope.event.eventId);
+
+    $scope.searchFilter = function(student){
+        if ($scope.q == ''){
+            return student.inTime != '' && student.outTime == '' && student.lastName.substring(0,$scope.q.length).toLowerCase() === $scope.q.toLowerCase();
+        }else {
+            return student.lastName.substring(0,$scope.q.length).toLowerCase() === $scope.q.toLowerCase();
+        }
+
+    };
     $scope.addRemove = function(student){
         if ($scope.q !== ''){
-            // for (var i = 0; i < $scope.students.length; i++){
-            //     if ($scope.students[i].id === $scope.students[idx].students){
-            //         return 'Remove';
-            //     }
-            // }
             // console.log(student.lastName+", "+student.firstName+" : inTime = " + student.inTime + "; outTime = " + student.outTime);
             if (student.inTime != '' && student.outTime == '') return 'Remove';
             return 'Add';
         }
         return null;
-    };
-    $scope.q = '';
-    $scope.event = JSON.parse(session.get('currentEvent'));
-    // console.log("receive:"+$scope.event.eventId);
-    $scope.students = [];
-    $scope.searchFilter = function(student){
-        return student.inTime != '' && student.outTime == '' && student.lastName.substring(0,$scope.q.length).toLowerCase() === $scope.q.toLowerCase();
     };
     $scope.getCheckinLen = function () {
         var n = 0;
