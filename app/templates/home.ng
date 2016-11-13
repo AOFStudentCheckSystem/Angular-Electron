@@ -1,11 +1,53 @@
 <div class="container">
     <div class="row">
         <div class="col-xs-12 col-sm-6 col-md-4">
-            <a href="#/login">
+            <a href="#/event">
                 <div class="panel panel-default">
                     <div class="panel-body text-center">
                         <i class="fa fa-bus fa-icon" aria-label="hidden"></i>
                         <h1>Start Check-In</h1>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-body text-center">
+                    <i class="fa fa-sign-out fa-icon"></i>
+                    <h1>2</h1>
+                </div>
+            </div>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-body text-center">
+                    <i class="fa fa-id-card fa-icon"></i>
+                    <h1>3</h1>
+                </div>
+            </div>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-body text-center">
+                    <i class="fa fa-refresh fa-icon"></i>
+                    <h1>4</h1>
+                </div>
+            </div>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-body text-center">
+                    <i class="fa fa-ambulance fa-icon"></i>
+                    <h1>人生重来</h1>
+                </div>
+            </div>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-4">
+            <a href="#/advanced">
+                <div class="panel panel-default">
+                    <div class="panel-body text-center">
+                        <i class="fa fa-code fa-icon"></i>
+                        <h1>Advanced</h1>
                     </div>
                 </div>
             </a>

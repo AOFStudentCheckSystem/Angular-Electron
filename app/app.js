@@ -4,8 +4,9 @@ const eapp = electron.remote.app;
 const Devices = smartcard.Devices;
 const devices = new Devices();
 let currentDevices = [];
+const sqlite3 = require('sqlite3');
 
-const domain = "http://hn2.guardiantech.com.cn:57463/";
+const domain = "http://hn2.guardiantech.com.cn:10492/v2/";
 
 var app = angular.module("studentCheck",['ngRoute','routeStyles'], function ($httpProvider) {
     $httpProvider.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8';
@@ -46,9 +47,11 @@ var app = angular.module("studentCheck",['ngRoute','routeStyles'], function ($ht
 });
 app.factory("session", function () {
     return {
-        get: function () {
-            return window.sessionStorage.getItem("token");
+        get: function (key) {
+            return window.sessionStorage.getItem(key);
         },
+        set: function (key,value) {
+            window.sessionStorage.setItem(key,value);
         set: function (jwt) {
             window.sessionStorage.setItem("token",jwt);
         },
@@ -70,8 +73,8 @@ app.factory('httpInterceptor', ['$q', '$injector','session', function ($q, $inje
             return response;
         },
         'request': function (config) {
-            if(session.get() !== undefined && session.get() != ""){
-                config.headers['Authorization'] = session.get();
+            if(session.get("token") !== undefined && session.get("token") != ""){
+                config.headers['Authorization'] = "Bearer " + session.get("token");
             }
             return config;
         },
@@ -81,6 +84,49 @@ app.factory('httpInterceptor', ['$q', '$injector','session', function ($q, $inje
     };
     return httpInterceptor;
 }]);
+app.factory('syncManager', function ($http, $rootScope) {
+    return{
+        downloadStudentInfo: function (callback) {
+            $http.get(domain + 'api/student/all').then(function (result) {
+                var stmt = $rootScope.db.prepare("INSERT OR REPLACE INTO `StudentInfo` ('id','firstName','lastName','rfid','dorm') VALUES (?,?,?,?,?)");
+                for (var i = 0; i < result.data.students.length; i++){
+                    var student = result.data.students[i];
+                    stmt.run([student.studentId,student.firstName,student.lastName,student.rfid,student.dorm]);
+                }
+                stmt.finalize();
+                callback(true);
+            }, function(error){
+                alert("Download Students Error!");
+                callback(false);
+            });
+        },
+        downloadEvents: function(callback){
+            $http.get(domain + '/api/event/list').then(function (result) {
+                var stmt = $rootScope.db.prepare("INSERT OR REPLACE INTO `Events` ('eventId','eventName','status') VALUES (?,?,?)");
+                for (var i = 0; i < result.data.events.length; i++){
+                    var event = result.data.events[i];
+                    if(event.eventStatus != 2){
+                        stmt.run([event.eventId,event.eventName,event.eventStatus]);
+                    }
+                }
+                stmt.finalize();
+                callback(true);
+            }, function(error){
+                alert("Download Events Error!");
+                callback(false);
+            });
+        },
+        downloadEventStudent: function(eventId,callback){
+            $http.get(domain + 'api/event/'+eventId+'/detail').then(function (result) {
+                callback(result.data.students);
+            }, function(error){
+                alert("Download Student @ "+eventId+" Error!");
+                callback(false);
+            });
+        }
+    };
+});
+
 app.config(['$httpProvider', function ($httpProvider) {
     $httpProvider.interceptors.push('httpInterceptor');
 }]);
@@ -93,36 +139,273 @@ app.config(function ($routeProvider) {
         })
         .when("/home",{
             templateUrl: 'templates/home.ng',
-            controller: 'homeCtrl',
-            css: 'templates/home.css'
+            css: 'templates/home.css',
+            controller: 'homeCtrl'
+        })
+        .when("/event",{
+            templateUrl: 'templates/event.ng',
+            controller: 'eventCtrl'
+        })
+        .when("/checkin",{
+            templateUrl: 'templates/checkin.ng',
+            controller: 'checkinCtrl'
+        })
+        .when("/advanced",{
+            templateUrl: 'templates/advanced.ng',
+            css:'templates/advanced.css',
+            controller: 'advancedCtrl'
         })
         .otherwise({
             templateUrl: 'templates/index.ng',
             controller: 'indexCtrl'
         });
-
 });
-app.controller("navbarCtrl",function ($scope, $http) {
 
+app.controller("navbarCtrl",function ($scope, $http, session, $location) {
+    $scope.$watchCollection(
+        function () {
+            return [session.get("token")!=null, session.get("username")];
+        },
+        function (newVal, oldVal) {
+            $scope.isLoggedIn = newVal[0];
+            $scope.username = newVal[1];
+        }
+    );
+    $scope.goBack = function(){
+        /*window.history.back();*/
+        var url = '';
+        switch ('/'+$location.url().split('/')[1]){
+            case '/home':
+                url = '/login';
+                break;
+            case '/event':
+                url = '/home';
+                break;
+            case '/checkin':
+                url = '/event';
+                break;
+            case '/advanced':
+                url = '/home';
+        }
+        if (url!=''){
+            $location.url(url);
+        }
+    };
 });
 app.controller('indexCtrl',function ($scope, $http, session) {
     window.location.href="#/login";
 });
 app.controller('loginCtrl',function ($scope, $http, session) {
+    $scope.isLoggingIn = false;
     $scope.login = function(){
+        $scope.isLoggingIn = true;
         $http.post(domain+"api/auth",{username:$scope.username, password:calcMD5($scope.password)})
             .then(function (result) {
-                session.set(result.data.token);
-                window.location.href="#/home"
+                session.set("token",result.data.token);
+                session.set("username",$scope.username);
+                    window.location.href="#/home";
             },
             function (failResult) {
                 $scope.password = "";
-                alert("Sign In Failed");
+                $scope.isLoggingIn = false;
+                alert("Sign In Failed"+JSON.stringify(failResult.data));
             });
     }
 });
-app.controller('homeCtrl',function ($scope, $http, session) {
+app.controller('homeCtrl',function ($rootScope) {
+    // schemaBuilder.createTable('StudentInfo')
+    //     .addColumn('id', lf.Type.INTEGER)
+    //     .addColumn('firstName', lf.Type.STRING)
+    //     .addColumn('lastName',lf.Type.STRING)
+    //     .addColumn('rfid',lf.Type.STRING)
+    //     .addColumn('dorm',lf.Type.STRING)
+    //     .addPrimaryKey(['id'])
+    //     .addNullable(['firstName','lastName','rfid','dorm']);
+    // schemaBuilder.createTable('StudentCheck')
+    //     .addColumn('id', lf.Type.INTEGER)
+    //     .addColumn('eventId', lf.Type.STRING)
+    //     .addColumn('inTime',lf.Type.STRING)
+    //     .addColumn('outTime',lf.Type.STRING)
+    //     .addColumn('upload',lf.Type.INTEGER)
+    //     .addPrimaryKey(['id','eventId'])
+    //     .addNullable(['inTime','outTime','upload']);
+    // schemaBuilder.createTable('StudentReg')
+    //     .addColumn('id', lf.Type.INTEGER)
+    //     .addColumn('rfid', lf.Type.STRING)
+    //     .addPrimaryKey(['id'])
+    //     .addNullable(['rfid']);
+    // schemaBuilder.createTable('Events')
+    //     .addColumn('eventId', lf.Type.INTEGER)
+    //     .addColumn('eventName', lf.Type.STRING)
+    //     .addColumn('eventStatus', lf.Type.INTEGER)
+    //     .addPrimaryKey(['eventId'])
+    //     .addNullable(['eventName','eventStatus']);
+    // // var db;
+    // // var item;
+    // // schemaBuilder.connect()
+    // //     .then(function(dbR){
+    // //     db = dbR;
+    // //     item = db.getSchema().table('StudentInfo');
+    // //     var row = item.createRow({
+    // //         'id': 12345,
+    // //         'firstName': 'Tony',
+    // //         'lastName': 'Liu',
+    // //         'rfid': 'nil',
+    // //         'dorm': 'ELE233'
+    // //     });
+    // //     return db.insertOrReplace().into(item).values([row]).exec();
+    // // })
+    // //     .then(function() {
+    // //     return db.select().from(item).where(item.id.eq(12345)).exec();
+    // // }).then(function(results) {
+    // //     results.forEach(function(row) {
+    // //         console.log(row['lastName'] + row['firstName']);
+    // //     });
+    // // });
+    // schemaBuilder.connect().then(function (dbR) {
+    //     $rootScope.db = dbR;
+    // });
+    $rootScope.db = new sqlite3.Database('AOFCheckDB.db', function (error) {
+        if (error!=null) alert("Failed to initialize database! " + error);
+        else {
+            // console.log('DB init succeed');
+            $rootScope.db.exec(
+                "CREATE TABLE if not exists StudentInfo      " +
+                "(id     TEXT PRIMARY KEY UNIQUE NOT NULL," +
+                " firstName TEXT                            ," +
+                " lastName  TEXT                            ," +
+                " rfid      TEXT                            ," +
+                " dorm      TEXT                           );" +
+                "CREATE TABLE if not exists StudentCheck     " +
+                "(id     TEXT                    NOT NULL," +
+                " eventId   TEXT                    NOT NULL," +
+                " inTime    TEXT                            ," +
+                " outTime   TEXT                            ," +
+                " upload  TEXT                              ," +
+                " PRIMARY KEY (id, eventId)             );" +
+                "CREATE TABLE if not exists StudentReg       " +
+                "(id     TEXT PRIMARY KEY UNIQUE NOT NULL," +
+                " rfid      TEXT                           );" +
+                "CREATE TABLE if not exists Events           " +
+                "(eventId   TEXT PRIMARY KEY UNIQUE NOT NULL," +
+                " eventName TEXT                            ," +
+                " status    TEXT                           ) ",
+            function(error){
+                if (error!=null) alert("Failed to create table! " + error);
+                // else console.log("Create table succeed");
+            });
+        }
+    });
+});
+app.controller('eventCtrl',function ($scope, $http, session) {
+    $scope.selected = -1;
+    $scope.events = [];
+    $http.get(domain+"api/event/list").then(function (successReturn) {
+        $scope.events = successReturn.data.events;
+    });
+    $scope.selectItem = function (item) {
+        $scope.selected = item;
+    };
+    $scope.isActive = function(item) {
+        return $scope.selected == item;
+    };
+    $scope.continueEvent = function () {
+        if($scope.selected < 0){
+            alert("Please select a event!");
+        }else {
+            session.set('currentEvent',JSON.stringify($scope.events[$scope.selected]));
+            window.location.href = "#/checkin";
+        }
+    };
+    $scope.activeFilter = function(event) {
+        return event.eventStatus != 2;
+    };
+});
+app.controller('checkinCtrl',function ($scope, session, syncManager, $rootScope) {
+    $scope.students=[];
+    $rootScope.db.all("SELECT * FROM `StudentInfo`",function(err,rows){
+        rows.forEach(function (row) {
+            $scope.students.push({
+                id:row.id,
+                firstName:row.firstName,
+                lastName:row.lastName,
+                inTime:'',
+                outTime:'',
+                rfid:row.rfid,
+                dorm:row.dorm
+            });
+        });
+        syncManager.downloadEventStudent($scope.event.eventId, function (ret) {
+            if (ret != false){
+                for (var i = 0; i < ret.length; i++){
+                    // const j = i;
+                    // $rootScope.db.get("SELECT * FROM `StudentInfo` WHERE `id` = ?", [ret[j].studentId], function (error, rowa) {
+                    //     ret[j].firstName = rowa.firstName;
+                    //     ret[j].lastName = rowa.lastName;
+                    //     $scope.students.push(ret[j]);
+                    //     $scope.$apply();
+                    // });
+                    for (var k = 0; k < $scope.students.length; k++){
+                        if ($scope.students[k].id === ret[i].studentId){
+                            $scope.students[k].inTime = ret[i].checkinTime;
+                            $scope.students[k].outTime = ret[i].checkoutTime;
+                            break;
+                        }
+                    }
+                }
+            }
+            // if (ret!=false){
+            //     var fn,ln;
+            //     for (var i = 0; i < ret.length; i++){
+            //         const j = i;
+            //         $rootScope.db.get("SELECT * FROM `StudentInfo` WHERE `id` = ?",[ret[i].studentId],function (error,rowa) {
+            //             fn = rowa.firstName;
+            //             ln = rowa.lastName;
+            //             ret[j]['firstName'] = fn;
+            //             ret[j]['lastName'] = ln;
+            //             $scope.students = ret;
+            //             console.log($scope.students);
+            //         });
+            //     }
+            // }
 
+        });
+    });
+    $scope.addRemove = function(student){
+        if ($scope.q !== ''){
+            // for (var i = 0; i < $scope.students.length; i++){
+            //     if ($scope.students[i].id === $scope.students[idx].students){
+            //         return 'Remove';
+            //     }
+            // }
+            // console.log(student.lastName+", "+student.firstName+" : inTime = " + student.inTime + "; outTime = " + student.outTime);
+            if (student.inTime != '' && student.outTime == '') return 'Remove';
+            return 'Add';
+        }
+        return null;
+    };
+    $scope.q = '';
+    $scope.event = JSON.parse(session.get('currentEvent'));
+    // console.log("receive:"+$scope.event.eventId);
+    $scope.students = [];
+    $scope.searchFilter = function(student){
+        return student.inTime != '' && student.outTime == '' && student.lastName.substring(0,$scope.q.length).toLowerCase() === $scope.q.toLowerCase();
+    };
+    $scope.getCheckinLen = function () {
+        var n = 0;
+        $scope.students.forEach(function (student) {
+            if (student.inTime != '' && student.outTime == '') n++;
+        });
+        return n;
+    };
+});
+app.controller('advancedCtrl',function($scope,syncManager){
+    $scope.downloadStudentInfo = function () {
+        syncManager.downloadStudentInfo(function(ret){});
+    };
+    $scope.downloadEvents = function(){
+        syncManager.downloadEvents(function(ret){});
+    };
 });
 // app.controller("cardDisplayCtrl",function ($scope) {
 //     $scope.card = "No Reader";
