@@ -7,6 +7,7 @@ a {
     color:inherit;
     text-decoration: none;
 }
+
 a:active{
     color: inherit;
     text-decoration: none;
@@ -19,7 +20,6 @@ a:hover{
     color: #00b3ee;
     text-decoration: none;
 }
-
 
 .panel-content{
     margin-left: auto;

@@ -4,6 +4,7 @@
             <img src="http://placekitten.com/g/300/450"/>
             <h2>First Name</h2>
             <h2>Last Name</h2>
+            <h2>Count: {{students.length}}</h2>
         </div>
         <div class="col-xs-6">
             <!--<div class="input-group" style="margin-bottom: 10px;">-->
@@ -14,43 +15,14 @@
             <!--</div>-->
             <div class="list-group-item-heading">
                 <div class="input-group">
-                    <input type="text" class="form-control"/>
+                    <input type="text" class="form-control" ng-model="q"/>
                     <span class="input-group-btn"><button class="btn btn-default">Yoo</button></span>
                 </div>
             </div>
-            <div class="list-group" style="overflow-y: scroll; max-height: 90vh;">
-                <a class="list-group-item">
-                    <h4 class="list-group-item-heading"> whatever</h4>
-                    <p class="list-group-item-text">What what whatasdfdsf</p>
-                </a><a class="list-group-item">
-                <h4 class="list-group-item-heading"> whatever</h4>
-                <p class="list-group-item-text">What what whatasdfdsf</p>
-            </a><a class="list-group-item">
-                <h4 class="list-group-item-heading"> whatever</h4>
-                <p class="list-group-item-text">What what whatasdfdsf</p>
-            </a><a class="list-group-item">
-                <h4 class="list-group-item-heading"> whatever</h4>
-                <p class="list-group-item-text">What what whatasdfdsf</p>
-            </a><a class="list-group-item">
-                <h4 class="list-group-item-heading"> whatever</h4>
-                <p class="list-group-item-text">What what whatasdfdsf</p>
-            </a><a class="list-group-item">
-                <h4 class="list-group-item-heading"> whatever</h4>
-                <p class="list-group-item-text">What what whatasdfdsf</p>
-            </a><a class="list-group-item">
-                <h4 class="list-group-item-heading"> whatever</h4>
-                <p class="list-group-item-text">What what whatasdfdsf</p>
-            </a><a class="list-group-item">
-                <h4 class="list-group-item-heading"> whatever</h4>
-                <p class="list-group-item-text">What what whatasdfdsf</p>
-            </a>
-                <a class="list-group-item">
-                    <h4 class="list-group-item-heading"> whatever 1</h4>
-                    <p class="list-group-item-text">Wdsafdsafhat what whatasdfdsf</p>
-                </a>
-                <a class="list-group-item">
-                    <h4 class="list-group-item-heading"> whatever 2</h4>
-                    <p class="list-group-item-text">What what whatasdfdsffdsadsaf</p>
+            <div class="list-group" style="overflow-y: scroll; max-height: 85vh;">
+                <a class="list-group-item" ng-repeat="student in students | filter:searchFilter">
+                    <h4 class="list-group-item-heading">{{student.lastName}}, {{student.firstName}}</h4>
+                    <p class="list-group-item-text"></p>
                 </a>
             </div>
         </div>

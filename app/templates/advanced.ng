@@ -1,0 +1,24 @@
+<div class="container">
+    <div class="row">
+        <div class="col-xs-12">
+            <a ng-click="downloadStudentInfo()">
+                <div class="panel panel-default">
+                    <div class="panel-body text-center">
+                        <h1>Download Students</h1>
+                        <h4>Last Sync: whatever</h4>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xs-12">
+            <a ng-click="downloadEvents()">
+                <div class="panel panel-default">
+                    <div class="panel-body text-center">
+                        <h1>Download Events</h1>
+                        <h4>Last Sync: whatever</h4>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
