@@ -316,7 +316,7 @@ app.controller('checkinCtrl',function ($scope, session, syncManager, $rootScope)
     $scope.allStudents=[];
     $rootScope.db.all("SELECT * FROM `StudentInfo`",function(err,rows){
         rows.forEach(function (row) {
-            allStudents.push({
+            $scope.allStudents.push({
                 id:row.id,
                 firstName:row.firstName,
                 lastName:row.lastName,
@@ -325,13 +325,16 @@ app.controller('checkinCtrl',function ($scope, session, syncManager, $rootScope)
             });
         });
     });
-    $scope.isAdd = function(stu){
-        for (var i = 0; i < allStudents.length; i++){
-            if (student.id === stu.id){
-                return false;
+    $scope.isRemove = function(idx){
+        if ($scope.q !== ''){
+            for (var i = 0; i < $scope.allStudents.length; i++){
+                if ($scope.allStudents[i].id === $scope.students[idx].id){
+                    return true;
+                }
             }
+            return false;
         }
-        return true;
+        return null;
     };
     $scope.q = '';
     $scope.event = JSON.parse(session.get('currentEvent'));
