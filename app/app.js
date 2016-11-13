@@ -313,6 +313,26 @@ app.controller('eventCtrl',function ($scope, $http, session) {
     };
 });
 app.controller('checkinCtrl',function ($scope, session, syncManager, $rootScope) {
+    $scope.allStudents=[];
+    $rootScope.db.all("SELECT * FROM `StudentInfo`",function(err,rows){
+        rows.forEach(function (row) {
+            allStudents.push({
+                id:row.id,
+                firstName:row.firstName,
+                lastName:row.lastName,
+                rfid:row.rfid,
+                dorm:row.dorm
+            });
+        });
+    });
+    $scope.isAdd = function(stu){
+        for (var i = 0; i < allStudents.length; i++){
+            if (student.id === stu.id){
+                return false;
+            }
+        }
+        return true;
+    };
     $scope.q = '';
     $scope.event = JSON.parse(session.get('currentEvent'));
     console.log("receive:"+$scope.event.eventId);
