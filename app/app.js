@@ -107,11 +107,25 @@ app.factory('syncManager', function ($http, $rootScope) {
                 callback(false);
             });
         },
-        downloadEventStudent: function(eventId,callback){
+        downloadEventStudents: function(eventId, callback){
             $http.get(domain + 'api/event/'+eventId+'/detail').then(function (result) {
                 callback(result.data.students);
             }, function(error){
                 alert("Download Student @ "+eventId+" Error!");
+                callback(false);
+            });
+        },
+        uploadAddStudent: function (id, checkin, checkout, eventId, callback) {
+            $http.post(domain + 'api/event/'+ eventId +'/add',{data:JSON.stringify({add:[{id:id.toString(),checkin:checkin.toString(),checkout:checkout.toString()}]})}).then(function (suc) {
+                callback(true);
+            }, function (err) {
+                callback(false);
+            });
+        },
+        uploadRemoveStudent: function (id, eventId, callback) {
+            $http.post(domain + 'api/event/'+ eventId +'/remove',{data:JSON.stringify({remove:[id.toString()]})}).then(function (suc) {
+                callback(true);
+            }, function (err) {
                 callback(false);
             });
         }
@@ -288,7 +302,7 @@ app.controller('homeCtrl',function ($rootScope) {
         }
     });
 });
-app.controller('eventCtrl',function ($scope, $http, session) {
+app.controller('eventCtrl',function ($scope, $http) {
     $scope.selected = undefined;
     $scope.events = [];
     $http.get(domain+"api/event/list").then(function (successReturn) {
@@ -315,7 +329,7 @@ app.controller('eventCtrl',function ($scope, $http, session) {
 });
 app.controller('checkinCtrl',function ($scope, $routeParams, session, syncManager, $rootScope) {
     $scope.students=[];
-    eventId = $routeParams.eventId;
+    var eventId = $routeParams.eventId;
     $rootScope.db.all("SELECT * FROM `StudentInfo`",function(err,rows){
         rows.forEach(function (row) {
             $scope.students.push({
@@ -328,16 +342,9 @@ app.controller('checkinCtrl',function ($scope, $routeParams, session, syncManage
                 dorm:row.dorm
             });
         });
-        syncManager.downloadEventStudent(eventId, function (ret) {
+        syncManager.downloadEventStudents(eventId, function (ret) {
             if (ret != false) {
                 for (var i = 0; i < ret.length; i++) {
-                    // const j = i;
-                    // $rootScope.db.get("SELECT * FROM `StudentInfo` WHERE `id` = ?", [ret[j].studentId], function (error, rowa) {
-                    //     ret[j].firstName = rowa.firstName;
-                    //     ret[j].lastName = rowa.lastName;
-                    //     $scope.students.push(ret[j]);
-                    //     $scope.$apply();
-                    // });
                     for (var k = 0; k < $scope.students.length; k++) {
                         if ($scope.students[k].id === ret[i].studentId) {
                             $scope.students[k].inTime = ret[i].checkinTime;
@@ -349,32 +356,16 @@ app.controller('checkinCtrl',function ($scope, $routeParams, session, syncManage
             }
         });
     });
-
     $scope.q = '';
-
-    $scope.event = JSON.parse(session.get('currentEvent'));
-    console.log("receive:"+$scope.event.eventId);
-
     $scope.searchFilter = function(student){
         if ($scope.q == ''){
             return student.inTime != '' && student.outTime == '' && student.lastName.substring(0,$scope.q.length).toLowerCase() === $scope.q.toLowerCase();
         }else {
             return student.lastName.substring(0,$scope.q.length).toLowerCase() === $scope.q.toLowerCase();
         }
-
     };
-    $scope.addRemove = function(student){
-        if ($scope.q !== ''){
-            // console.log(student.lastName+", "+student.firstName+" : inTime = " + student.inTime + "; outTime = " + student.outTime);
-            if (student.inTime != '' && student.outTime == '') return 'Remove';
-            return 'Add';
-        }
-        return null;
-    };
-    $scope.q = '';
-    $scope.students = [];
-    $scope.searchFilter = function(student){
-        return student.inTime != '' && student.outTime == '' && student.lastName.substring(0,$scope.q.length).toLowerCase() === $scope.q.toLowerCase();
+    $scope.isCheckedIn = function (student) {
+        return (student.inTime != '' && student.outTime == '')
     };
     $scope.getCheckinLen = function () {
         var n = 0;
@@ -383,6 +374,47 @@ app.controller('checkinCtrl',function ($scope, $routeParams, session, syncManage
         });
         return n;
     };
+
+    $scope.addStudentByName = function(stu){
+        for (var i = 0; i < $scope.students.length; i++){
+            if (stu.id == $scope.students[i].id){
+                $scope.students[i].inTime = new Date().getTime();
+                console.log(stu.firstName +" added @ " + $scope.students[i].inTime);
+                var s = $scope.students[i];
+                doUpload(s, 0);
+                break;
+            }
+        }
+    };
+
+    var doUpload = function (s, cnt) {
+        if (cnt < 5){
+            syncManager.uploadAddStudent(s.id, s.inTime, s.outTime, eventId, function(ret){
+                console.log("upload add succeed = "+ret);
+                if (ret === false){doUpload(s, cnt++)}});
+        }
+    };
+
+    $scope.deleteStudentByName = function(stu){
+        for (var i = 0; i < $scope.students.length; i++){
+            if (stu.id == $scope.students[i].id){
+                $scope.students[i].inTime = '';
+                console.log(stu.firstName +" removed");
+                var s = $scope.students[i];
+                doDownload(s, 0);
+                break;
+            }
+        }
+    };
+
+    var doDownload = function (s, cnt) {
+        if (cnt < 5){
+            syncManager.uploadRemoveStudent(s.id, eventId, function(ret){
+                console.log("upload remove succeed = "+ret);
+                if (ret === false){doDownload(s, cnt++)}});
+        }
+    };
+
 });
 app.controller('advancedCtrl',function($scope,syncManager){
     $scope.downloadStudentInfo = function () {

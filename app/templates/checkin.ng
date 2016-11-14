@@ -22,7 +22,12 @@
             <div class="list-group" style="overflow-y: scroll; max-height: 85vh;">
                 <a class="list-group-item" ng-repeat="student in students | filter:searchFilter">
                     <h4 class="list-group-item-heading">{{student.lastName}}, {{student.firstName}}</h4>
-                    <p class="list-group-item-text">{{addRemove(student)}}</p>
+                    <div class="list-group-item-text">
+                        <div class="pull-right" style="margin-top: -25px;">
+                            <button class="btn btn-sm btn-danger" ng-class="{'hidden':!isCheckedIn(student)}" ng-click="deleteStudentByName(student)">Remove</button>
+                            <button class="btn btn-sm btn-primary" ng-class="{'hidden':isCheckedIn(student)}" ng-click="addStudentByName(student)">Add</button>
+                        </div>
+                    </div>
                 </a>
             </div>
         </div>
