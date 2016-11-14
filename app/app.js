@@ -79,13 +79,17 @@ app.factory('syncManager', function ($http, $rootScope) {
     return{
         downloadStudentInfo: function (callback) {
             $http.get(domain + 'api/student/all').then(function (result) {
-                var stmt = $rootScope.db.prepare("INSERT OR REPLACE INTO `StudentInfo` ('id','firstName','lastName','rfid','dorm') VALUES (?,?,?,?,?)");
-                for (var i = 0; i < result.data.students.length; i++){
-                    var student = result.data.students[i];
-                    stmt.run([student.studentId,student.firstName,student.lastName,student.rfid,student.dorm]);
-                }
-                stmt.finalize();
-                callback(true);
+                $rootScope.db.serialize(function(){
+                    $rootScope.db.run("BEGIN TRANSACTION");
+                    var stmt = $rootScope.db.prepare("INSERT OR REPLACE INTO `StudentInfo` ('id','firstName','lastName','rfid','dorm') VALUES (?,?,?,?,?)");
+                    for (var i = 0; i < result.data.students.length; i++){
+                        var student = result.data.students[i];
+                        stmt.run([student.studentId,student.firstName,student.lastName,student.rfid,student.dorm]);
+                    }
+                    stmt.finalize();
+                    $rootScope.db.run("COMMIT");
+                    callback(true);
+                });
             }, function(error){
                 alert("Download Students Error!");
                 callback(false);
@@ -93,15 +97,19 @@ app.factory('syncManager', function ($http, $rootScope) {
         },
         downloadEvents: function(callback){
             $http.get(domain + '/api/event/list').then(function (result) {
-                var stmt = $rootScope.db.prepare("INSERT OR REPLACE INTO `Events` ('eventId','eventName','status') VALUES (?,?,?)");
-                for (var i = 0; i < result.data.events.length; i++){
-                    var event = result.data.events[i];
-                    if(event.eventStatus != 2){
-                        stmt.run([event.eventId,event.eventName,event.eventStatus]);
+                $rootScope.db.serialize(function(){
+                    $rootScope.db.run("BEGIN TRANSACTION");
+                    var stmt = $rootScope.db.prepare("INSERT OR REPLACE INTO `Events` ('eventId','eventName','status') VALUES (?,?,?)");
+                    for (var i = 0; i < result.data.events.length; i++){
+                        var event = result.data.events[i];
+                        if(event.eventStatus != 2){
+                            stmt.run([event.eventId,event.eventName,event.eventStatus]);
+                        }
                     }
-                }
-                stmt.finalize();
-                callback(true);
+                    stmt.finalize();
+                    $rootScope.db.run("COMMIT");
+                    callback(true);
+                });
             }, function(error){
                 alert("Download Events Error!");
                 callback(false);
