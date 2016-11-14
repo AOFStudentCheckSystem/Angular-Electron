@@ -418,11 +418,15 @@ app.controller('checkinCtrl',function ($scope, $routeParams, session, syncManage
 });
 app.controller('advancedCtrl',function($scope,syncManager){
     $scope.downloadStudentInfo = function () {
-        syncManager.downloadStudentInfo(function(ret){});
+        $scope.downloadStudentInfoInProgress = true;
+        syncManager.downloadStudentInfo(function(ret){$scope.downloadStudentInfoInProgress = false;});
     };
     $scope.downloadEvents = function(){
-        syncManager.downloadEvents(function(ret){});
+        $scope.downloadEventsInProgress = true;
+        syncManager.downloadEvents(function(ret){$scope.downloadEventsInProgress = false;});
     };
+    $scope.downloadStudentInfoInProgress = false;
+    $scope.downloadEventsInProgress = false;
 });
 // app.controller("cardDisplayCtrl",function ($scope) {
 //     $scope.card = "No Reader";
