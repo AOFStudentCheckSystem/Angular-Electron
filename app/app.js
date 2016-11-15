@@ -84,6 +84,7 @@ app.factory('httpInterceptor', ['$q', '$injector','session', function ($q, $inje
     };
     return httpInterceptor;
 }]);
+//Network & DB
 app.factory('syncManager', function ($http, $rootScope) {
     return{
         downloadStudentInfo: function (callback) {
@@ -403,7 +404,6 @@ app.controller('checkinCtrl',function ($scope, $routeParams, session, syncManage
             }
         }
     };
-
     var doUpload = function (s, cnt) {
         if (cnt < 5){
             syncManager.uploadAddStudent(s.id, s.inTime, s.outTime, eventId, function(ret){
@@ -423,7 +423,6 @@ app.controller('checkinCtrl',function ($scope, $routeParams, session, syncManage
             }
         }
     };
-
     var doDownload = function (s, cnt) {
         if (cnt < 5){
             syncManager.uploadRemoveStudent(s.id, eventId, function(ret){
@@ -431,6 +430,16 @@ app.controller('checkinCtrl',function ($scope, $routeParams, session, syncManage
                 if (ret === false){doDownload(s, cnt++)}});
         }
     };
+
+    currentDevices.forEach(function(device){
+        device.on('card-inserted',event => {
+            let card = event.card;
+            
+        });
+        device.on('card-removed',event => {
+
+        });
+    });
 
 });
 app.controller('advancedCtrl',function($scope,syncManager){
