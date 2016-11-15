@@ -8,7 +8,7 @@ const sqlite3 = require('sqlite3');
 
 const domain = "http://hn2.guardiantech.com.cn:10492/v2/";
 
-var app = angular.module("studentCheck",['ngRoute','routeStyles'], function ($httpProvider) {
+var app = angular.module("studentCheck",['ngRoute','routeStyles','ngAnimate'], function ($httpProvider) {
     $httpProvider.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8';
     var param = function (obj) {
         var query = '', name, value, fullSubName, subName, subValue, innerObj, i;
@@ -210,7 +210,8 @@ app.controller('loginCtrl',function ($scope, $http, session) {
             });
     }
 });
-app.controller('homeCtrl',function ($rootScope) {
+app.controller('homeCtrl',function ($rootScope, $scope) {
+    $scope.animationName = "slide";
     // schemaBuilder.createTable('StudentInfo')
     //     .addColumn('id', lf.Type.INTEGER)
     //     .addColumn('firstName', lf.Type.STRING)
