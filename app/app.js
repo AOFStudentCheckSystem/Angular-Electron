@@ -44,6 +44,15 @@ var app = angular.module("studentCheck",['ngRoute','routeStyles'], function ($ht
     $httpProvider.defaults.transformRequest = [function (data) {
         return angular.isObject(data) && String(data) !== '[object File]' ? param(data) : data;
     }];
+
+    devices.on('device-activated', event => {
+        console.log("Reader added :" + event.device);
+        currentDevices = event.devices;
+    });
+    devices.on('device-deactivated', event => {
+        console.log("Reader removed :" + event.device);
+        currentDevices = event.devices;
+    });
 });
 app.factory("session", function () {
     return {
