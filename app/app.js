@@ -166,11 +166,11 @@ app.config(function ($routeProvider) {
         .when("/login", {
             templateUrl: 'templates/login.ng',
             controller: 'loginCtrl',
-            css: 'templates/login.css'
+            // css: 'templates/login.css'
         })
         .when("/home", {
             templateUrl: 'templates/home.ng',
-            css: 'templates/home.css',
+            // css: 'templates/home.css',
             controller: 'homeCtrl'
         })
         .when("/event", {
@@ -183,7 +183,7 @@ app.config(function ($routeProvider) {
         })
         .when("/advanced", {
             templateUrl: 'templates/advanced.ng',
-            css: 'templates/advanced.css',
+            // css: 'templates/advanced.css',
             controller: 'advancedCtrl'
         })
         .otherwise({
@@ -244,58 +244,6 @@ app.controller('loginCtrl', function ($scope, $http, session) {
     }
 });
 app.controller('homeCtrl', function ($rootScope) {
-    // schemaBuilder.createTable('StudentInfo')
-    //     .addColumn('id', lf.Type.INTEGER)
-    //     .addColumn('firstName', lf.Type.STRING)
-    //     .addColumn('lastName',lf.Type.STRING)
-    //     .addColumn('rfid',lf.Type.STRING)
-    //     .addColumn('dorm',lf.Type.STRING)
-    //     .addPrimaryKey(['id'])
-    //     .addNullable(['firstName','lastName','rfid','dorm']);
-    // schemaBuilder.createTable('StudentCheck')
-    //     .addColumn('id', lf.Type.INTEGER)
-    //     .addColumn('eventId', lf.Type.STRING)
-    //     .addColumn('inTime',lf.Type.STRING)
-    //     .addColumn('outTime',lf.Type.STRING)
-    //     .addColumn('upload',lf.Type.INTEGER)
-    //     .addPrimaryKey(['id','eventId'])
-    //     .addNullable(['inTime','outTime','upload']);
-    // schemaBuilder.createTable('StudentReg')
-    //     .addColumn('id', lf.Type.INTEGER)
-    //     .addColumn('rfid', lf.Type.STRING)
-    //     .addPrimaryKey(['id'])
-    //     .addNullable(['rfid']);
-    // schemaBuilder.createTable('Events')
-    //     .addColumn('eventId', lf.Type.INTEGER)
-    //     .addColumn('eventName', lf.Type.STRING)
-    //     .addColumn('eventStatus', lf.Type.INTEGER)
-    //     .addPrimaryKey(['eventId'])
-    //     .addNullable(['eventName','eventStatus']);
-    // // var db;
-    // // var item;
-    // // schemaBuilder.connect()
-    // //     .then(function(dbR){
-    // //     db = dbR;
-    // //     item = db.getSchema().table('StudentInfo');
-    // //     var row = item.createRow({
-    // //         'id': 12345,
-    // //         'firstName': 'Tony',
-    // //         'lastName': 'Liu',
-    // //         'rfid': 'nil',
-    // //         'dorm': 'ELE233'
-    // //     });
-    // //     return db.insertOrReplace().into(item).values([row]).exec();
-    // // })
-    // //     .then(function() {
-    // //     return db.select().from(item).where(item.id.eq(12345)).exec();
-    // // }).then(function(results) {
-    // //     results.forEach(function(row) {
-    // //         console.log(row['lastName'] + row['firstName']);
-    // //     });
-    // // });
-    // schemaBuilder.connect().then(function (dbR) {
-    //     $rootScope.db = dbR;
-    // });
     $rootScope.db = new sqlite3.Database('AOFCheckDB.db', function (error) {
         if (error != null) alert("Failed to initialize database! " + error);
         else {
