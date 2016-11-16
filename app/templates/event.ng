@@ -13,11 +13,11 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-xs-12 col-sm-6" style="margin-bottom:10px">
-            <button class="btn btn-danger btn-block">Complete Event</button>
-        </div>
-        <div class="col-xs-12 col-sm-6">
-            <button class="btn btn-primary btn-block" ng-click="continueEvent()">Continue</button>
+        <!--<div class="col-xs-12 col-sm-6" style="margin-bottom:10px">-->
+            <!--<button class="btn btn-danger btn-block">Complete Event</button>-->
+        <!--</div>-->
+        <div class="col-xs-12">
+            <button class="btn btn-primary btn-block" ng-click="continueEvent()" ng-disabled="selected == undefined">Continue</button>
         </div>
     </div>
 </div>

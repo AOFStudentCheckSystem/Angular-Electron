@@ -91,6 +91,7 @@ app.factory('syncManager', function ($http, $rootScope) {
             $http.get(domain + 'api/student/all').then(function (result) {
                 $rootScope.db.serialize(function () {
                     $rootScope.db.run("BEGIN TRANSACTION");
+                    // $rootScope.db.run("DELETE FROM `StudentInfo`");
                     var stmt = $rootScope.db.prepare("INSERT OR REPLACE INTO `StudentInfo` ('id','firstName','lastName','rfid','dorm') VALUES (?,?,?,?,?)");
                     for (var i = 0; i < result.data.students.length; i++) {
                         var student = result.data.students[i];
@@ -109,11 +110,12 @@ app.factory('syncManager', function ($http, $rootScope) {
             $http.get(domain + '/api/event/list').then(function (result) {
                 $rootScope.db.serialize(function () {
                     $rootScope.db.run("BEGIN TRANSACTION");
-                    var stmt = $rootScope.db.prepare("INSERT OR REPLACE INTO `Events` ('eventId','eventName','status') VALUES (?,?,?)");
+                    // $rootScope.db.run("DELETE FROM `Events`");
+                    var stmt = $rootScope.db.prepare("INSERT OR REPLACE INTO `Events` ('eventId','eventName','eventTime','status') VALUES (?,?,?,?)");
                     for (var i = 0; i < result.data.events.length; i++) {
                         var event = result.data.events[i];
                         if (event.eventStatus != 2) {
-                            stmt.run([event.eventId, event.eventName, event.eventStatus]);
+                            stmt.run([event.eventId, event.eventName, event.eventTime, event.eventStatus]);
                         }
                     }
                     stmt.finalize();
@@ -123,6 +125,28 @@ app.factory('syncManager', function ($http, $rootScope) {
             }, function (error) {
                 alert("Download Events Error!");
                 callback(false);
+            });
+        },
+        readEvents: function (callback) {
+            console.log("calledReadEvents");
+            $rootScope.db.all("SELECT * FROM `Events` WHERE `status` <> 2", [], function (err, rows) {
+                if (err == null) {
+                    let events = [];
+                    rows.forEach(function (row) {
+                        events.push(
+                            {
+                                eventId: row.eventId,
+                                eventName: row.eventName,
+                                eventTime: row.eventTime,
+                                eventStatus: row.status
+                            }
+                        );
+                    });
+                    console.log("length:"+events.length);
+                    callback(events);
+                }else {
+                    console.log("error:"+err);
+                }
             });
         },
         downloadEventStudents: function (eventId, callback) {
@@ -150,6 +174,21 @@ app.factory('syncManager', function ($http, $rootScope) {
         },
         uploadRemoveStudent: function (id, eventId, callback) {
             $http.post(domain + 'api/event/' + eventId + '/remove', {data: JSON.stringify({remove: [id.toString()]})}).then(function (suc) {
+                callback(true);
+            }, function (err) {
+                callback(false);
+            });
+        },
+        uploadAddEvent: function (eventName, callback) {
+            $http.post(domain + 'api/event/add', {eventName: eventName}).then(function (suc) {
+                callback(suc);
+            }, function (err) {
+                callback(null);
+            });
+        },
+        uploadCompleteEvent: function (eventId, callback) {
+            $http.post(domain + 'api/event/' + eventId + '/complete', {}).then(function (suc) {
+                $rootScope.db.run("UPDATE `Events` SET `status` = ? WHERE `eventId` = ?",[2,eventId]);
                 callback(true);
             }, function (err) {
                 callback(false);
@@ -186,6 +225,10 @@ app.config(function ($routeProvider) {
             // css: 'templates/advanced.css',
             controller: 'advancedCtrl'
         })
+        .when("/events", {
+            templateUrl: 'templates/events.ng',
+            controller: 'eventsCtrl'
+        })
         .otherwise({
             templateUrl: 'templates/index.ng',
             controller: 'indexCtrl'
@@ -217,6 +260,10 @@ app.controller("navbarCtrl", function ($scope, $http, session, $location) {
                 break;
             case '/advanced':
                 url = '/home';
+                break;
+            case '/events':
+                url = '/home';
+                break;
         }
         if (url != '') {
             $location.url(url);
@@ -268,6 +315,7 @@ app.controller('homeCtrl', function ($rootScope) {
                 "CREATE TABLE if not exists Events           " +
                 "(eventId   TEXT PRIMARY KEY UNIQUE NOT NULL," +
                 " eventName TEXT                            ," +
+                " eventTime TEXT                            ," +
                 " status    TEXT                           ) ",
                 function (error) {
                     if (error != null) alert("Failed to create table! " + error);
@@ -279,6 +327,7 @@ app.controller('homeCtrl', function ($rootScope) {
 app.controller('eventCtrl', function ($scope, $http) {
     $scope.selected = undefined;
     $scope.events = [];
+
     $http.get(domain + "api/event/list").then(function (successReturn) {
         $scope.events = successReturn.data.events;
     });
@@ -322,8 +371,8 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                     for (var k = 0; k < $scope.students.length; k++) {
                         if ($scope.students[k].id === ret[i].studentId) {
                             $scope.students[k].inTime = ret[i].checkinTime;
-                            $scope.students[k].outTime = ret[i].checkoutTime == null?'':ret[i].checkoutTime;
-                            console.log("id:"+$scope.students[k].id+" in:"+$scope.students[k].inTime+" out:"+$scope.students[k].outTime);
+                            $scope.students[k].outTime = ret[i].checkoutTime == null ? '' : ret[i].checkoutTime;
+                            console.log("id:" + $scope.students[k].id + " in:" + $scope.students[k].inTime + " out:" + $scope.students[k].outTime);
                             break;
                         }
                     }
@@ -362,7 +411,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     var doUpload = function (s, cnt, inTime) {
         if (cnt < 3) {
             syncManager.uploadAddStudent(s.id, s.inTime, s.outTime, eventId, function (ret) {
-                console.log("upload add succeed = " + ret + "cnt = "+cnt);
+                console.log("upload add succeed = " + ret + "cnt = " + cnt);
                 if (ret === false) {
                     doUpload(s, cnt + 1, inTime);
                 } else {
@@ -390,7 +439,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     var doDownload = function (s, cnt) {
         if (cnt < 3) {
             syncManager.uploadRemoveStudent(s.id, eventId, function (ret) {
-                console.log("upload remove succeed = " + ret + "cnt = "+cnt);
+                console.log("upload remove succeed = " + ret + "cnt = " + cnt);
                 if (ret === false) {
                     doDownload(s, cnt + 1);
                 } else {
@@ -432,6 +481,52 @@ app.controller('advancedCtrl', function ($scope, syncManager) {
     };
     $scope.downloadStudentInfoInProgress = false;
     $scope.downloadEventsInProgress = false;
+});
+app.controller('eventsCtrl', function ($scope, $http, syncManager) {
+    $scope.selected = undefined;
+    $scope.events = [];
+    $scope.eventName = '';
+
+    let updateEvents = function () {
+        syncManager.downloadEvents(function (ret1) {
+            syncManager.readEvents(function (ret2) {
+                $scope.events = ret2;
+                $scope.$apply();
+            });
+        });
+    };
+    // $http.get(domain + "api/event/list").then(function (successReturn) {
+    //     $scope.events = successReturn.data.events;
+    // });
+    updateEvents();
+
+    $scope.selectItem = function (item) {
+        $scope.selected = item;
+    };
+    $scope.isActive = function (item) {
+        return $scope.selected == item;
+    };
+    $scope.activeFilter = function (event) {
+        return event.eventStatus != 2;
+    };
+    $scope.addEvent = function () {
+        let n = $scope.eventName;
+        console.log("start");
+        syncManager.uploadAddEvent(n, function (ret) {
+            if (ret !== null) {
+                updateEvents();
+            }
+        });
+    };
+    $scope.completeEvent = function(){
+        syncManager.uploadCompleteEvent($scope.selected.eventId,function (ret) {
+            syncManager.readEvents(function (ret2) {
+                $scope.events = ret2;
+                $scope.$apply();
+            });
+        });
+    }
+
 });
 // app.controller("cardDisplayCtrl",function ($scope) {
 //     $scope.card = "No Reader";
