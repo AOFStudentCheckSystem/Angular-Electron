@@ -1,11 +1,13 @@
 const smartcard = require('smartcard');
 const electron = require('electron');
+const fs = require('fs');
+const sqlite3 = require('sqlite3');
 const eapp = electron.remote.app;
 const Devices = smartcard.Devices;
 const devices = new Devices();
 let currentDevices = [];
-const sqlite3 = require('sqlite3');
 let db;
+
 
 const domain = "http://hn2.guardiantech.com.cn:10492/v2/";
 
@@ -129,7 +131,7 @@ app.factory('syncManager', function ($http, $rootScope) {
             });
         },
         readEvents: function (callback) {
-            console.log("calledReadEvents");
+            // console.log("calledReadEvents");
             db.all("SELECT * FROM `Events` WHERE `status` <> 2", [], function (err, rows) {
                 if (err == null) {
                     let events = [];
@@ -143,10 +145,10 @@ app.factory('syncManager', function ($http, $rootScope) {
                             }
                         );
                     });
-                    console.log("length:" + events.length);
+                    // console.log("length:" + events.length);
                     callback(events);
                 } else {
-                    console.log("error:" + err);
+                    console.warn("error:" + err);
                 }
             });
         },
@@ -157,6 +159,22 @@ app.factory('syncManager', function ($http, $rootScope) {
                 alert("Download Student @ " + eventId + " Error!");
                 callback(null);
             });
+        },
+        downloadPics: function (callback){
+            let cnt = 0;
+            console.log(eapp.getPath('appData') + '/AOFCheckE/pics');
+            // if (!fs.existsSync(eapp.getPath('exe') + '/pics')){
+            //
+            //     fs.mkdirSync(eapp.getPath('exe') + '/pics');
+            // }
+            // db.each("SELECT * FROM `StudentInfo`",[],function (err, rows) {
+            //     $http.get(domain + '/api/student/'+ +'/image').then(function (result) {
+            //
+            //     }, function (error) {
+            //
+            //     });
+            // });
+            callback(true);
         },
         uploadAddStudent: function (id, checkin, checkout, eventId, callback) {
             $http.post(domain + 'api/event/' + eventId + '/add', {
@@ -367,10 +385,10 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
             });
         });
         syncManager.downloadEventStudents(eventId, function (ret) {
-            console.log(JSON.stringify(ret));
+            // console.log(JSON.stringify(ret));
             if (ret != null) {
                 for (let i = 0; i < ret.length; i++) {
-                    console.log($scope.students.length);
+                    // console.log($scope.students.length);
                     for (let k = 0; k < $scope.students.length; k++) {
                         // console.log("i="+i+" k="+k);
                         if ($scope.students[k].id === ret[i].studentId) {
@@ -468,7 +486,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                 //alert(event.card.getAtr());
                 db.get('SELECT * FROM `StudentInfo` WHERE `rfid` = ? COLLATE NOCASE', [card.getAtr().toUpperCase()], function (err, row) {
                     if (err == null) {
-                        console.log("find it");
+                        // console.log("find it");
                         $scope.checkinStudent({
                             id: row.id,
                             firstName: row.firstName,
@@ -503,8 +521,15 @@ app.controller('advancedCtrl', function ($scope, syncManager) {
             $scope.downloadEventsInProgress = false;
         });
     };
+    $scope.downloadPics = function () {
+        $scope.downloadPicsInProgress = true;
+        syncManager.downloadPics(function (ret) {
+            $scope.downloadPicsInProgress = false;
+        })
+    };
     $scope.downloadStudentInfoInProgress = false;
     $scope.downloadEventsInProgress = false;
+    $scope.downloadPicsInProgress = false;
 });
 app.controller('eventsCtrl', function ($scope, $http, syncManager) {
     $scope.selected = undefined;
@@ -535,7 +560,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager) {
     };
     $scope.addEvent = function () {
         let n = $scope.eventName;
-        console.log("start");
+        // console.log("start");
         syncManager.uploadAddEvent(n, function (ret) {
             if (ret !== null) {
                 updateEvents();
