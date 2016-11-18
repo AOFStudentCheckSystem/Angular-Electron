@@ -1,3 +1,28 @@
+<style>
+    th{
+        font-weight: 600;
+        color: #9d9ea2;
+    }
+    td{
+        font-weight: 500;
+        color: #818387;
+    }
+    body{
+        font-family:'Helvetica Neue',Helvetica,Arial,sans-serif,'Microsoft YaHei';
+        background-color: #fafafa;
+    }
+    .vert-parent {
+        padding: 5% 0;
+    }
+
+    .login-parent {
+        max-width: 320px;
+    }
+
+    .align-vertical {
+        padding: 10% 0;
+    }
+</style>
 <div class="container vert-parent login-parent">
     <div class="align-vertical">
         <div class="panel" id="loginPanel" ng-controller="loginCtrl">
