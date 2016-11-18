@@ -171,25 +171,25 @@ app.factory('syncManager', function ($http, $rootScope) {
                 console.log('folder already exist');
             }
                 db.each("SELECT * FROM `StudentInfo`",[],function (err, row) {
-                        if (!fs.existsSync(photoPath + '/' + row.id + '.jpg')){
-                            $http.get(domain + '/api/student/'+ row.id +'/image').then(function (result) {
-
-                                fs.writeFile(photoPath + '/' + row.id + '.jpg', result, (err)=>{
-                                    if (err){
-                                        console.warn('write file error @' + row.id + ' :' + err);
-                                    }else {
-                                        console.log('write file succeed @' + row.id);
-                                    }
-                                });
-                                callback(true,null);
-                            }, function (error) {
-                                console.log('http error occur @' + row.id + ' :' + error);
-                                callback(true,null);
+                        $http.get(domain + '/api/student/'+ row.id +'/image',{responseType: 'arraybuffer'}).then(function (result) {
+                            // console.log(result);
+                            let f = fs.createWriteStream(photoPath + '/' + row.id + '.jpg');
+                            f.write(Buffer.from(result.data),function (err, written, string) {
+                                f.close();
                             });
-                        }else {
-                            console.log('AE @' + row.id);
+                            // f.close();
+                            // fs.writeFile(, , (err)=>{
+                            //     if (err){
+                            // console.warn('write file error @' + row.id + ' :' + err);
+                            //     }else {
+                                    console.log('write file succeed @' + row.id);
+                            //     }
+                            // });
                             callback(true,null);
-                        }
+                        }, function (error) {
+                            console.log('http error occur @' + row.id + ' :' + error);
+                            callback(true,null);
+                        });
                     },
                     function (err, rowN) {
                         callback(false,rowN);
