@@ -7,6 +7,8 @@ const Devices = smartcard.Devices;
 const devices = new Devices();
 let currentDevices = [];
 let db;
+const photoPath = eapp.getPath('appData') + '/student-check-electron-angular/pics';
+///Users/liupeiqi/Library/Application Support/student-check-electron-angular/pics
 
 
 const domain = "http://hn2.guardiantech.com.cn:10492/v2/";
@@ -161,20 +163,37 @@ app.factory('syncManager', function ($http, $rootScope) {
             });
         },
         downloadPics: function (callback){
-            let cnt = 0;
-            console.log(eapp.getPath('appData') + '/AOFCheckE/pics');
-            // if (!fs.existsSync(eapp.getPath('exe') + '/pics')){
-            //
-            //     fs.mkdirSync(eapp.getPath('exe') + '/pics');
-            // }
-            // db.each("SELECT * FROM `StudentInfo`",[],function (err, rows) {
-            //     $http.get(domain + '/api/student/'+ +'/image').then(function (result) {
-            //
-            //     }, function (error) {
-            //
-            //     });
-            // });
-            callback(true);
+            console.log(photoPath);
+            if (!fs.existsSync(photoPath)){
+                console.log('DNE, attempt to mkdir');
+                fs.mkdirSync(photoPath);
+            }else {
+                console.log('folder already exist');
+            }
+                db.each("SELECT * FROM `StudentInfo`",[],function (err, row) {
+                        if (!fs.existsSync(photoPath + '/' + row.id + '.jpg')){
+                            $http.get(domain + '/api/student/'+ row.id +'/image').then(function (result) {
+
+                                fs.writeFile(photoPath + '/' + row.id + '.jpg', result, (err)=>{
+                                    if (err){
+                                        console.warn('write file error @' + row.id + ' :' + err);
+                                    }else {
+                                        console.log('write file succeed @' + row.id);
+                                    }
+                                });
+                                callback(true,null);
+                            }, function (error) {
+                                console.log('http error occur @' + row.id + ' :' + error);
+                                callback(true,null);
+                            });
+                        }else {
+                            console.log('AE @' + row.id);
+                            callback(true,null);
+                        }
+                    },
+                    function (err, rowN) {
+                        callback(false,rowN);
+                    });
         },
         uploadAddStudent: function (id, checkin, checkout, eventId, callback) {
             $http.post(domain + 'api/event/' + eventId + '/add', {
@@ -522,11 +541,18 @@ app.controller('advancedCtrl', function ($scope, syncManager) {
         });
     };
     $scope.downloadPics = function () {
+        $scope.value = 0;
         $scope.downloadPicsInProgress = true;
-        syncManager.downloadPics(function (ret) {
-            $scope.downloadPicsInProgress = false;
+        syncManager.downloadPics(function (cur, max) {
+            if (max != null){$scope.maxv = max}
+            if (cur) ++$scope.value;
+            if ($scope.value >= $scope.maxv){
+                $scope.downloadPicsInProgress = false;
+            }
         })
     };
+    $scope.value = 0;
+    $scope.maxv = 100;
     $scope.downloadStudentInfoInProgress = false;
     $scope.downloadEventsInProgress = false;
     $scope.downloadPicsInProgress = false;
