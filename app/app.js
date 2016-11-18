@@ -1,6 +1,6 @@
 const smartcard = require('smartcard');
 const electron = require('electron');
-const fs = require('fs');
+const fs = require('fs-extra');
 const sqlite3 = require('sqlite3');
 const eapp = electron.remote.app;
 const Devices = smartcard.Devices;
@@ -164,36 +164,31 @@ app.factory('syncManager', function ($http, $rootScope) {
         },
         downloadPics: function (callback){
             console.log(photoPath);
-            if (!fs.existsSync(photoPath)){
-                console.log('DNE, attempt to mkdir');
-                fs.mkdirSync(photoPath);
-            }else {
-                console.log('folder already exist');
-            }
-                db.each("SELECT * FROM `StudentInfo`",[],function (err, row) {
-                        $http.get(domain + '/api/student/'+ row.id +'/image',{responseType: 'arraybuffer'}).then(function (result) {
-                            // console.log(result);
-                            let f = fs.createWriteStream(photoPath + '/' + row.id + '.jpg');
-                            f.write(Buffer.from(result.data),function (err, written, string) {
-                                f.close();
-                            });
-                            // f.close();
-                            // fs.writeFile(, , (err)=>{
-                            //     if (err){
-                            // console.warn('write file error @' + row.id + ' :' + err);
-                            //     }else {
-                                    console.log('write file succeed @' + row.id);
-                            //     }
-                            // });
-                            callback(true,null);
-                        }, function (error) {
-                            console.log('http error occur @' + row.id + ' :' + error);
-                            callback(true,null);
+            fs.ensureDirSync(photoPath);
+            db.each("SELECT * FROM `StudentInfo`",[],function (err, row) {
+                    $http.get(domain + '/api/student/'+ row.id +'/image',{responseType: 'arraybuffer'}).then(function (result) {
+                        // console.log(result);
+                        let f = fs.createWriteStream(photoPath + '/' + row.id + '.jpg');
+                        f.write(Buffer.from(result.data),function (err, written, string) {
+                            f.close();
                         });
-                    },
-                    function (err, rowN) {
-                        callback(false,rowN);
+                        // f.close();
+                        // fs.writeFile(, , (err)=>{
+                        //     if (err){
+                        // console.warn('write file error @' + row.id + ' :' + err);
+                        //     }else {
+                                console.log('write file succeed @' + row.id);
+                        //     }
+                        // });
+                        callback(true,null);
+                    }, function (error) {
+                        console.log('http error occur @' + row.id + ' :' + error);
+                        callback(true,null);
                     });
+                },
+                function (err, rowN) {
+                    callback(false,rowN);
+                });
         },
         uploadAddStudent: function (id, checkin, checkout, eventId, callback) {
             $http.post(domain + 'api/event/' + eventId + '/add', {
@@ -550,6 +545,9 @@ app.controller('advancedCtrl', function ($scope, syncManager) {
                 $scope.downloadPicsInProgress = false;
             }
         })
+    };
+    $scope.removePics = function () {
+        fs.removeSync(photoPath);
     };
     $scope.value = 0;
     $scope.maxv = 100;

@@ -35,5 +35,15 @@
                 </div>
             </a>
         </div>
+        <div class="col-xs-12 col-sm-6 col-md-4">
+            <a ng-click="removePics()">
+                <div class="panel panel-default">
+                    <div class="panel-body text-center">
+                        <h1>Remove Photos</h1>
+                        <h4>whatever</h4>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 </div>
