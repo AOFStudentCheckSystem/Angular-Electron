@@ -417,6 +417,9 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
         });
     });
     $scope.q = '';
+    $scope.pic = 'http://placekitten.com/g/300/450';
+    $scope.fn = 'First Name';
+    $scope.ln = 'Last Name';
     $scope.searchFilter = function (student) {
         if ($scope.q == '') {
             return student.inTime != '' && student.outTime == '' && student.lastName.substring(0, $scope.q.length).toLowerCase() === $scope.q.toLowerCase();
@@ -437,8 +440,8 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
 
     $scope.checkinStudent = function (stu) {
         for (let i = 0; i < $scope.students.length; i++) {
-            if (stu.id == $scope.students[i].id && $scope.students[i].inTime == '') {
-                doUpload($scope.students[i], 0, new Date().getTime());
+            if (stu.id == $scope.students[i].id) {
+                doUpload($scope.students[i], 0,  $scope.students[i].inTime == '' ? new Date().getTime():$scope.students[i].inTime);
                 break;
             }
         }
@@ -453,6 +456,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                     for (let i = 0; i < $scope.students.length; i++) {
                         if (s.id == $scope.students[i].id) {
                             $scope.students[i].inTime = inTime;
+
                             console.log($scope.students[i].firstName + " added @ " + $scope.students[i].inTime);
                             break;
                         }
@@ -461,6 +465,12 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
             });
         }
     };
+    let showStudent = function (student) {
+        $scope.pic = photoPath + '/' + student.id + '.jpg';
+        $scope.fn = $scope.students[i].firstName;
+        $scope.ln = $scope.students[i].lastName;
+    }
+
 
     $scope.deleteStudent = function (stu) {
         for (let i = 0; i < $scope.students.length; i++) {

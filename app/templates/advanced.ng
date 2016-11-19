@@ -28,9 +28,13 @@
                     <div class="panel-body text-center">
                         <h1>Download Photos</h1>
                         <h4>Last Sync: whatever</h4>
-                        <progress class="progress progress-striped progress-animated" value={{value}} max={{maxv}}></progress>
-                        <i class="fa fa-refresh" ng-class="{'fa-spin' : downloadPicsInProgress}" style="font-size: 10vmin"></i>
-                        <h4>{{value}}/{{maxv}}</h4>
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" ng-style="{'width': value*100/maxv + '%', 'min-width': '2em'}" ng-class="{'active':downloadPicsInProgress}">
+                                {{(value*100/maxv | number:0) + '%'}}
+                            </div>
+                        </div>
+                        <!--<i class="fa fa-refresh" ng-class="{'fa-spin' : downloadPicsInProgress}" style="font-size: 10vmin"></i>-->
+                        <!--<h4>{{value}}/{{maxv}}</h4>-->
                     </div>
                 </div>
             </a>

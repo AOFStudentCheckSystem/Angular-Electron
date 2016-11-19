@@ -1,9 +1,9 @@
 <div class="container">
     <div class="row">
         <div class="col-xs-6 text-right">
-            <img src="http://placekitten.com/g/300/450"/>
-            <h2>First Name</h2>
-            <h2>Last Name</h2>
+            <img ng-src="{{pic}}" alt="No photo available, try download the photo again."/>
+            <h2>{{fn}}</h2>
+            <h2>{{ln}}</h2>
             <h2>Count: {{getCheckinLen()}}</h2>
         </div>
         <div class="col-xs-6">
