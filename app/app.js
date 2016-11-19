@@ -14,7 +14,38 @@ devices.on('device-deactivated', event => {
     console.log("Reader removed :" + event.device);
     currentDevices = event.devices;
 });
-let db;
+let db = new sqlite3.Database('AOFCheckDB.db', function (error) {
+    if (error != null) alert("Failed to initialize database! " + error);
+    else {
+        // console.log('DB init succeed');
+        db.exec(
+            "CREATE TABLE if not exists StudentInfo      " +
+            "(id     TEXT PRIMARY KEY UNIQUE NOT NULL," +
+            " firstName TEXT                            ," +
+            " lastName  TEXT                            ," +
+            " rfid      TEXT                            ," +
+            " dorm      TEXT                           );" +
+            "CREATE TABLE if not exists StudentCheck     " +
+            "(id     TEXT                    NOT NULL," +
+            " eventId   TEXT                    NOT NULL," +
+            " inTime    TEXT                            ," +
+            " outTime   TEXT                            ," +
+            " upload  TEXT                              ," +
+            " PRIMARY KEY (id, eventId)             );" +
+            "CREATE TABLE if not exists StudentReg       " +
+            "(id     TEXT PRIMARY KEY UNIQUE NOT NULL," +
+            " rfid      TEXT                           );" +
+            "CREATE TABLE if not exists Events           " +
+            "(eventId   TEXT PRIMARY KEY UNIQUE NOT NULL," +
+            " eventName TEXT                            ," +
+            " eventTime TEXT                            ," +
+            " status    TEXT                           ) ",
+            function (error) {
+                if (error != null) alert("Failed to create table! " + error);
+                // else console.log("Create table succeed");
+            });
+    }
+});
 const photoPath = eapp.getPath('appData') + '/student-check-electron-angular/pics';
 ///Users/liupeiqi/Library/Application Support/student-check-electron-angular/pics
 
@@ -324,38 +355,7 @@ app.controller('loginCtrl', function ($scope, $http, session) {
     }
 });
 app.controller('homeCtrl', function () {
-    db = new sqlite3.Database('AOFCheckDB.db', function (error) {
-        if (error != null) alert("Failed to initialize database! " + error);
-        else {
-            // console.log('DB init succeed');
-            db.exec(
-                "CREATE TABLE if not exists StudentInfo      " +
-                "(id     TEXT PRIMARY KEY UNIQUE NOT NULL," +
-                " firstName TEXT                            ," +
-                " lastName  TEXT                            ," +
-                " rfid      TEXT                            ," +
-                " dorm      TEXT                           );" +
-                "CREATE TABLE if not exists StudentCheck     " +
-                "(id     TEXT                    NOT NULL," +
-                " eventId   TEXT                    NOT NULL," +
-                " inTime    TEXT                            ," +
-                " outTime   TEXT                            ," +
-                " upload  TEXT                              ," +
-                " PRIMARY KEY (id, eventId)             );" +
-                "CREATE TABLE if not exists StudentReg       " +
-                "(id     TEXT PRIMARY KEY UNIQUE NOT NULL," +
-                " rfid      TEXT                           );" +
-                "CREATE TABLE if not exists Events           " +
-                "(eventId   TEXT PRIMARY KEY UNIQUE NOT NULL," +
-                " eventName TEXT                            ," +
-                " eventTime TEXT                            ," +
-                " status    TEXT                           ) ",
-                function (error) {
-                    if (error != null) alert("Failed to create table! " + error);
-                    // else console.log("Create table succeed");
-                });
-        }
-    });
+
 });
 app.controller('eventCtrl', function ($scope, $http) {
     $scope.selected = undefined;
@@ -490,7 +490,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     }
 
     $scope.deleteStudent = function (stu) {
-        if (confirm('Do you really want to remove this student?')) {
+        // if (confirm('Do you really want to remove this student?')) {
             for (let i = 0; i < $scope.students.length; i++) {
                 if (stu.id == $scope.students[i].id) {
                     $scope.students[i].inTime = '';
@@ -499,7 +499,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                     break;
                 }
             }
-        }
+        // }
     };
     let doUploadRm = function (s, cnt) {
         if (cnt < 3) {
