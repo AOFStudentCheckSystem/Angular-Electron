@@ -6,6 +6,14 @@ const eapp = electron.remote.app;
 const Devices = smartcard.Devices;
 const devices = new Devices();
 let currentDevices = [];
+devices.on('device-activated', event => {
+    console.log("Reader added :" + event.device);
+    currentDevices = event.devices;
+});
+devices.on('device-deactivated', event => {
+    console.log("Reader removed :" + event.device);
+    currentDevices = event.devices;
+});
 let db;
 const photoPath = eapp.getPath('appData') + '/student-check-electron-angular/pics';
 ///Users/liupeiqi/Library/Application Support/student-check-electron-angular/pics
@@ -50,14 +58,6 @@ let app = angular.module("studentCheck", ['ngRoute', 'routeStyles'], function ($
         return angular.isObject(data) && String(data) !== '[object File]' ? param(data) : data;
     }];
 
-    devices.on('device-activated', event => {
-        console.log("Reader added :" + event.device);
-        currentDevices = event.devices;
-    });
-    devices.on('device-deactivated', event => {
-        console.log("Reader removed :" + event.device);
-        currentDevices = event.devices;
-    });
 });
 app.factory("session", function () {
     return {
@@ -441,22 +441,26 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     $scope.checkinStudent = function (stu) {
         for (let i = 0; i < $scope.students.length; i++) {
             if (stu.id == $scope.students[i].id) {
-                doUpload($scope.students[i], 0,  $scope.students[i].inTime == '' ? new Date().getTime():$scope.students[i].inTime);
+                console.log('find student in arr');
+                if($scope.students[i].inTime == '')
+                    doUploadAdd($scope.students[i], 0, new Date().getTime().toString());
+                else
+                    showStudent($scope.students[i],false);
                 break;
             }
         }
     };
-    let doUpload = function (s, cnt, inTime) {
+    let doUploadAdd = function (s, cnt, inTime) {
         if (cnt < 3) {
             syncManager.uploadAddStudent(s.id, inTime, s.outTime, eventId, function (ret) {
                 console.log("upload add succeed = " + ret + " cnt = " + cnt + " inTime = " + inTime);
                 if (ret === false) {
-                    doUpload(s, cnt + 1, inTime);
+                    doUploadAdd(s, cnt + 1, inTime);
                 } else {
                     for (let i = 0; i < $scope.students.length; i++) {
                         if (s.id == $scope.students[i].id) {
                             $scope.students[i].inTime = inTime;
-
+                            showStudent($scope.students[i],true);
                             console.log($scope.students[i].firstName + " added @ " + $scope.students[i].inTime);
                             break;
                         }
@@ -465,33 +469,49 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
             });
         }
     };
-    let showStudent = function (student) {
+
+    let dispTimeout = undefined;
+    let showStudent = function (student, changed) {
+        if (dispTimeout !== undefined)
+            clearTimeout(dispTimeout);
+        // console.log(student)
         $scope.pic = photoPath + '/' + student.id + '.jpg';
-        $scope.fn = $scope.students[i].firstName;
-        $scope.ln = $scope.students[i].lastName;
+        $scope.fn = student.firstName;
+        $scope.ln = student.lastName;
+        if (!changed)
+        $scope.$apply();
+        dispTimeout = setTimeout(function () {
+            console.log('its high noon');
+            $scope.pic = 'http://placekitten.com/g/300/450';
+            $scope.fn = 'First Name';
+            $scope.ln = 'Last Name';
+            $scope.$apply();
+        },5000);
     }
 
-
     $scope.deleteStudent = function (stu) {
-        for (let i = 0; i < $scope.students.length; i++) {
-            if (stu.id == $scope.students[i].id) {
-                $scope.students[i].inTime = '';
-                console.log(stu.firstName + " removed");
-                doDownload($scope.students[i], 0);
-                break;
+        if (confirm('Do you really want to remove this student?')) {
+            for (let i = 0; i < $scope.students.length; i++) {
+                if (stu.id == $scope.students[i].id) {
+                    $scope.students[i].inTime = '';
+                    console.log(stu.firstName + " removed");
+                    doUploadRm($scope.students[i], 0);
+                    break;
+                }
             }
         }
     };
-    let doDownload = function (s, cnt) {
+    let doUploadRm = function (s, cnt) {
         if (cnt < 3) {
             syncManager.uploadRemoveStudent(s.id, eventId, function (ret) {
                 console.log("upload remove succeed = " + ret + "cnt = " + cnt);
                 if (ret === false) {
-                    doDownload(s, cnt + 1);
+                    doUploadRm(s, cnt + 1);
                 } else {
                     for (let i = 0; i < $scope.students.length; i++) {
                         if (s.id == $scope.students[i].id) {
                             $scope.students[i].inTime = '';
+                            showStudent($scope.students[i],true);
                             break;
                         }
                     }
@@ -507,10 +527,9 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                 cardReadLock = true;
                 let card = event.card;
                 console.log(`Card '${card.getAtr()}' inserted into '${event.device}'`);
-                //alert(event.card.getAtr());
                 db.get('SELECT * FROM `StudentInfo` WHERE `rfid` = ? COLLATE NOCASE', [card.getAtr().toUpperCase()], function (err, row) {
                     if (err == null) {
-                        // console.log("find it");
+                        console.log("find it");
                         $scope.checkinStudent({
                             id: row.id,
                             firstName: row.firstName,
@@ -602,12 +621,14 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager) {
         });
     };
     $scope.completeEvent = function () {
-        syncManager.uploadCompleteEvent($scope.selected.eventId, function (ret) {
-            syncManager.readEvents(function (ret2) {
-                $scope.events = ret2;
-                $scope.$apply();
+        if (confirm('Do you really want to complete this event?')){
+            syncManager.uploadCompleteEvent($scope.selected.eventId, function (ret) {
+                syncManager.readEvents(function (ret2) {
+                    $scope.events = ret2;
+                    $scope.$apply();
+                });
             });
-        });
+        }
     }
 
 });
