@@ -7,7 +7,7 @@ const Devices = smartcard.Devices;
 const devices = new Devices();
 let currentDevices = [];
 let db = new sqlite3.Database('AOFCheckDB.db', function (error) {
-    if (error != null) console.warn("Failed to initialize database :" + error.toString());
+    if (error != null) console.warn("Failed to initialize database :" + error);
     else {
         db.exec(
             "CREATE TABLE if not exists StudentInfo      " +
@@ -32,7 +32,7 @@ let db = new sqlite3.Database('AOFCheckDB.db', function (error) {
             " eventTime TEXT                            ," +
             " status    TEXT                           ) ",
             function (error) {
-                if (error != null) console.warn("Failed to create table: " + error.toString());
+                if (error != null) console.warn("Failed to create table: " + error);
             });
     }
 });
@@ -261,7 +261,7 @@ app.factory('syncManager', function ($http, $rootScope) {
             $http.post(domain + 'api/event/' + eventId + '/complete', {}).then(function (suc) {
                 db.run("UPDATE `Events` SET `status` = ? WHERE `eventId` = ?", [2, eventId],function(err){
                     if (err) {
-                        console.warn('uploadCompleteEvent DB error:' + err.toString());
+                        console.warn('uploadCompleteEvent DB error:' + err);
                     }
                 });
                 callback(true);
@@ -272,7 +272,9 @@ app.factory('syncManager', function ($http, $rootScope) {
         uploadRegister: function (id, rfid, callback) {
             $http.post(domain + 'api/student/'+id+'/update',{rfid:rfid}).then(function(suc){
                 db.run('UPDATE `StudentInfo` SET `rfid` = ? WHERE id = ?',[rfid,id],function(err){
-                    console.warn('uploadRegister DB error:'+err.toString());
+                    if (err){
+                        console.warn('uploadRegister DB error:'+err);
+                    }
                 });
                 callback(true);
             },function(err){
@@ -446,7 +448,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     $scope.pic = 'http://placekitten.com/g/300/450';
     $scope.fn = 'First Name';
     $scope.ln = 'Last Name';
-    $scope.registerMode = false;
+    $scope.registerRFID = undefined;
     $scope.searchFilter = function (student) {
         if ($scope.q == '') {
             return student.inTime != '' && student.outTime == '' && student.lastName.substring(0, $scope.q.length).toLowerCase() === $scope.q.toLowerCase();
@@ -466,15 +468,16 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     };
 
     $scope.checkinStudent = function (stu) {
-        for (let i = 0; i < $scope.students.length; i++) {
-            if (stu.id == $scope.students[i].id) {
-                if($scope.students[i].inTime == '')
-                    doUploadAdd($scope.students[i], 0, new Date().getTime().toString());
-                else
-                    showStudent($scope.students[i],false);
-                break;
-            }
-        }
+        if($scope.registerRFID) registerStudent(stu.id, $scope.registerRFID);
+        // for (let i = 0; i < $scope.students.length; i++) {
+        //     if (stu.id == $scope.students[i].id) {
+        if(stu.inTime == '')
+            doUploadAdd(stu, 0, new Date().getTime().toString());
+        else
+            showStudent(stu,false);
+                // break;
+            // }
+        // }
     };
     let doUploadAdd = function (s, cnt, inTime) {
         if (cnt < 3) {
@@ -549,13 +552,38 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
         }
     };
 
+    let registerStudent = function (id, rfid) {
+        for (let i = 0; i < $scope.students.length; i++) {
+            if (id == $scope.students[i].id) {
+                $scope.students[i].rfid = rfid;
+                doUploadReg($scope.students[i], 0);
+                break;
+            }
+        }
+    };
+    let doUploadReg = function (s, cnt) {
+        if (cnt < 3) {
+            syncManager.uploadRegister(s.id, s.rfid, function (ret) {
+                if (!ret){
+                    console.warn("upload remove failed @ attempt" + cnt);
+                    doUploadReg(s, cnt + 1);
+                } else {
+                    $scope.registerRFID = undefined;
+                    showStudent($scope.students[i],true);
+                }
+            });
+        }else {
+            alert("upload register "+s.lastName+" "+s.firstName+" failed!");
+        }
+    };
+
     $scope.$on('card-attach', function(event, rfid) {
         db.get('SELECT * FROM `StudentInfo` WHERE `rfid` = ? COLLATE NOCASE', [rfid.toUpperCase()], function (err, row) {
-            if (err == null) {
+            if (err == undefined) {
                 if (row === undefined){
                     console.log('card DNE in DB');
-                    $scope.registerMode = true;
-                    //$scope.$apply();
+                    $scope.registerRFID = rfid.toUpperCase();
+                    $scope.$apply();
                 }else {
                     $scope.checkinStudent({
                         id: row.id,
@@ -568,7 +596,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                     });
                 }
             }else {
-                console.warn('failed query from DB :'+err.toString());
+                console.warn('failed query from DB :'+err);
             }
         });
     })
@@ -655,63 +683,3 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager) {
     }
 
 });
-// app.controller("cardDisplayCtrl",function ($scope) {
-//     $scope.card = "No Reader";
-//     $scope.card1 = "NN";
-//     $scope.onRegister = function () {
-//         alert('a');
-//         console.log(currentDevices);
-//         if (currentDevices.length > 0){
-//             currentDevices.forEach(function (elem) {
-//                 elem.on('card-inserted', function (event) {
-//                     let card = event.card;
-//                     $scope.card1 = card.getAtr();
-//                     $scope.$apply();
-//                 });
-//             })
-//         }
-//         devices.on('device-activated', function (event) {
-//             $scope.card1="No Card";
-//             $scope.$apply();
-//             currentDevices = event.devices;
-//             let device = event.device;
-//             device.on('card-inserted', function (event) {
-//                 let card = event.card;
-//                 $scope.card = card.getAtr();
-//                 $scope.$apply();
-//
-//             });
-//             device.on('card-removed', function (event) {
-//                 $scope.card = "No Card";
-//                 $scope.$apply();
-//
-//             });
-//         });
-//     };
-//
-//
-//     // window.localStorage.setItem("hello","test");
-//     devices.on('device-activated', function (event) {
-//         $scope.card="No Card";
-//         $scope.$apply();
-//         currentDevices = event.devices;
-//         let device = event.device;
-//         device.on('card-inserted', function (event) {
-//             let card = event.card;
-//             $scope.card = card.getAtr();
-//             $scope.$apply();
-//
-//         });
-//         device.on('card-removed', function (event) {
-//             $scope.card = "No Card";
-//             $scope.$apply();
-//
-//         });
-//     });
-//     devices.on('device-deactivated', function (event) {
-//         $scope.card="No Reader";
-//         $scope.$apply();
-//     });
-//
-//
-// });
