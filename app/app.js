@@ -114,6 +114,12 @@ app.factory("session", function () {
         },
         set: function (key, value) {
             window.sessionStorage.setItem(key, value);
+        },
+        remove: function (key) {
+            window.sessionStorage.removeItem(key);
+        },
+        clear: function () {
+            window.sessionStorage.clear();
         }
     };
 });
@@ -379,22 +385,31 @@ app.directive('autofocus', ['$timeout', function($timeout) {
 }]);
 
 app.controller("navbarCtrl", function ($scope, $http, session, $location) {
-    $scope.$watchCollection(
+    $scope.$watch(
         function () {
-            return [session.get("token") != null, session.get("username")];
+            return session.get("token") != null;
         },
         function (newVal, oldVal) {
-            $scope.isLoggedIn = newVal[0];
-            $scope.username = newVal[1];
+            $scope.isLoggedIn = newVal;
+            if (newVal != oldVal)
+            $scope.username = session.get("username");
         }
     );
-    $scope.goBack = function () {
-        /*window.history.back();*/
+    $scope.logIO = function () {
+        if ($scope.isLoggedIn){
+            session.clear();
+            $location.url('/home');
+        }else {
+            $location.url('/login');
+        }
+    };
+
+    let list = function () {
         let url = '';
         switch ('/' + $location.url().split('/')[1]) {
-            case '/home':
-                url = '/login';
-                break;
+            // case '/home':
+            //     url = '/login';
+            //     break;
             case '/event':
                 url = '/home';
                 break;
@@ -411,6 +426,14 @@ app.controller("navbarCtrl", function ($scope, $http, session, $location) {
                 url = '/home';
                 break;
         }
+        return url;
+    };
+    $scope.isBackNeed = function () {
+        return list() != '';
+    };
+    $scope.goBack = function () {
+        /*window.history.back();*/
+        let url = list();
         if (url != '') {
             $location.url(url);
         }
