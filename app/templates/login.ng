@@ -8,7 +8,7 @@
             <div class="panel-body">
                 <form ng-submit="login()">
                     <input type="text" id="username" class="form-control" ng-model="username"
-                           placeholder="username" required>
+                           placeholder="username" required autofocus>
                     <br>
                     <input type="password" id="password" class="form-control" ng-model="password"
                            placeholder="password" required>

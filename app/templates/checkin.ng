@@ -1,6 +1,5 @@
 <div class="container">
     <div class="row">
-        <h1>{{registerRFID===undefined?"undef":registerRFID}}</h1>
         <div class="col-xs-6 text-right" ng-show = "registerRFID === undefined">
             <img ng-src="{{pic}}" alt="No photo available, try download the photo again."/>
             <h2>{{fn}}</h2>
@@ -15,10 +14,7 @@
             <!--</span>-->
             <!--</div>-->
             <div class="list-group-item-heading">
-                <div class="input-group">
-                    <input type="text" class="form-control" ng-model="q" placeholder="search by last name"/>
-                    <span class="input-group-btn"><button class="btn btn-default">Yoo</button></span>
-                </div>
+                <input type="text" class="form-control" ng-model="q" placeholder="search by last name"/>
             </div>
             <div class="list-group" style="overflow-y: scroll; max-height: 85vh;">
                 <a class="list-group-item" ng-repeat="student in students | filter:searchFilter">

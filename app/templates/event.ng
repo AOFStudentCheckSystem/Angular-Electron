@@ -17,7 +17,7 @@
             <!--<button class="btn btn-danger btn-block">Complete Event</button>-->
         <!--</div>-->
         <div class="col-xs-12">
-            <button class="btn btn-primary btn-block" ng-click="continueEvent()" ng-disabled="selected == undefined">Continue</button>
+            <button class="btn btn-primary btn-block" ng-click="continueEvent()" ng-disabled="selected === undefined">Continue</button>
         </div>
     </div>
 </div>
