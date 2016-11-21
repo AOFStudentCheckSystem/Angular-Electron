@@ -5,22 +5,28 @@
             <div class="list-group-item-heading">
                 <div class="input-group">
                     <input type="text" class="form-control" ng-model="eventName" placeholder="event name"/>
-                    <span class="input-group-btn"><button class="btn btn-default" ng-disabled = "eventName === ''" ng-click="addEvent()">Add New Event</button></span>
+                    <span class="input-group-btn"><button class="btn btn-default" ng-disabled = "eventName === '' || !isLoggedIn" ng-click="addEvent()">Add New Event</button></span>
                 </div>
             </div>
             <div class="list-group">
                 <div style="max-height: 70vh; overflow-y: scroll">
                     <a class="list-group-item" ng-repeat="event in events | filter:activeFilter" ng-click="selectItem(event)" ng-class="{active: isActive(event)}">
                         <h4 class="list-group-item-heading">{{event.eventName}}</h4>
-                        <p class="list-group-item-text"></p>
+                        <p class="list-group-item-text">{{event.eventStatus==0?"Planning":(event.eventStatus==1?"Boarding":"Completed")}}</p>
                     </a>
                 </div>
             </div>
         </div>
     </div>
     <div class="row">
-        <div class="col-xs-12" style="margin-bottom:10px">
+        <div class="col-xs-12 col-md-6" style="margin-bottom:10px">
             <button class="btn btn-danger btn-block" ng-disabled="selected == undefined" ng-click="completeEvent()">Complete Event</button>
+        </div>
+        <div class="col-xs-12" ng-class="{'col-md-6':!localEvent}" ng-show="!localEvent" style="margin-bottom:10px">
+            <button class="btn btn-primary btn-block" ng-disabled="selected == undefined" ng-click="checkOutEvent()">Checkout Event</button>
+        </div>
+        <div class="col-xs-12" ng-class="{'col-md-6':localEvent}" ng-show="localEvent" style="margin-bottom:10px">
+            <button class="btn btn-success btn-block" ng-click="">Upload Event {{localEvent.eventName}}</button>
         </div>
     </div>
 </div>

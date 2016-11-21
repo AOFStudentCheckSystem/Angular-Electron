@@ -24,10 +24,10 @@ body{
 }
 
 /*home*/
-.homeButton{
-    text-align: center;
-    font-size: 20vmin;
-}
+/*.homeButton{*/
+    /*text-align: center;*/
+    /*font-size: 20vmin;*/
+/*}*/
 
 a {
     color:inherit;
@@ -45,6 +45,11 @@ a:visited{
 a:hover{
     color: #00b3ee;
     text-decoration: none;
+}
+
+.disabled-panel {
+    color: #cccccc !important;
+    cursor: default !important;
 }
 
 .panel-content{

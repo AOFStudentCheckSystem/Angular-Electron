@@ -1,7 +1,7 @@
 <div class="container">
     <div class="row">
-        <div class="col-xs-12 col-sm-6 col-md-4">
-            <a href="#/event">
+        <div class="col-xs-12 col-sm-6 col-lg-4">
+            <a ng-click="goCheckin()" style="cursor:pointer">
                 <div class="panel panel-default">
                     <div class="panel-body text-center">
                         <i class="fa fa-bus fa-icon" aria-label="hidden"></i>
@@ -10,8 +10,8 @@
                 </div>
             </a>
         </div>
-        <div class="col-xs-12 col-sm-6 col-md-4">
-            <a href="#/events">
+        <div class="col-xs-12 col-sm-6 col-lg-4">
+            <a ng-click="goEvents()" style="cursor:pointer" ng-class="{'disabled-panel':!isLoggedIn}">
                 <div class="panel panel-default">
                     <div class="panel-body text-center">
                         <i class="fa fa-calendar fa-icon"></i>
@@ -20,34 +20,34 @@
                 </div>
             </a>
         </div>
-        <div class="col-xs-12 col-sm-6 col-md-4">
-            <a href="#/register">
+        <div class="col-xs-12 col-sm-6 col-lg-4">
+            <a ng-click="goReg()" style="cursor:pointer" ng-class="{'disabled-panel':!isLoggedIn}">
                 <div class="panel panel-default">
                     <div class="panel-body text-center">
                         <i class="fa fa-id-card fa-icon"></i>
-                        <h1>Register Student</h1>
+                        <h1>Register</h1>
                     </div>
                 </div>
             </a>
         </div>
-        <div class="col-xs-12 col-sm-6 col-md-4">
-            <div class="panel panel-default">
+        <div class="col-xs-12 col-sm-6 col-lg-4">
+            <div class="panel panel-default disabled-panel">
                 <div class="panel-body text-center">
                     <i class="fa fa-refresh fa-icon"></i>
                     <h1>Comming Soon!</h1>
                 </div>
             </div>
         </div>
-        <div class="col-xs-12 col-sm-6 col-md-4">
-            <div class="panel panel-default">
+        <div class="col-xs-12 col-sm-6 col-lg-4">
+            <div class="panel panel-default disabled-panel" style="cursor:wait">
                 <div class="panel-body text-center">
                     <i class="fa fa-ambulance fa-icon"></i>
                     <h1>人生重来</h1>
                 </div>
             </div>
         </div>
-        <div class="col-xs-12 col-sm-6 col-md-4">
-            <a ng-click="goAdvanced()">
+        <div class="col-xs-12 col-sm-6 col-lg-4">
+            <a ng-click="goAdvanced()" style="cursor:pointer" ng-class="{'disabled-panel':!isLoggedIn}">
                 <div class="panel panel-default">
                     <div class="panel-body text-center">
                         <i class="fa fa-code fa-icon"></i>

@@ -1,7 +1,7 @@
 <div class="container">
     <div class="row">
         <div class="col-xs-12 col-sm-6 col-md-4">
-            <a ng-click="downloadStudentInfo()">
+            <a ng-click="downloadStudentInfo()" style="cursor: pointer">
                 <div class="panel panel-default">
                     <div class="panel-body text-center">
                         <h1>Download Students</h1>
@@ -12,7 +12,7 @@
             </a>
         </div>
         <div class="col-xs-12 col-sm-6 col-md-4">
-            <a ng-click="downloadEvents()">
+            <a ng-click="downloadEvents()" style="cursor: pointer">
                 <div class="panel panel-default">
                     <div class="panel-body text-center">
                         <h1>Download Events</h1>
@@ -23,7 +23,7 @@
             </a>
         </div>
         <div class="col-xs-12 col-sm-6 col-md-4">
-            <a ng-click="downloadPics()">
+            <a ng-click="downloadPics()" style="cursor: pointer">
                 <div class="panel panel-default">
                     <div class="panel-body text-center">
                         <h1>Download Photos</h1>
@@ -40,7 +40,7 @@
             </a>
         </div>
         <div class="col-xs-12 col-sm-6 col-md-4">
-            <a ng-click="removePics()">
+            <a ng-click="removePics()" style="cursor: pointer">
                 <div class="panel panel-default">
                     <div class="panel-body text-center">
                         <h1>Remove Photos</h1>
