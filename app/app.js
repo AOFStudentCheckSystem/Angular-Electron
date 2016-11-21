@@ -39,7 +39,7 @@ let db = new sqlite3.Database('AOFCheckDB.db', function (error) {
 const photoPath = eapp.getPath('appData') + '/student-check-electron-angular/pics';
 ///Users/liupeiqi/Library/Application Support/student-check-electron-angular/pics
 const domain = "http://hn2.guardiantech.com.cn:10492/v2/";
-const placeHolderPic = 'http://placekitten.com/g/300/450';
+const placeHolderPic = 'http://placekitten.com/300/450';
 
 let app = angular.module("studentCheck", ['ngRoute', 'routeStyles'], function ($httpProvider) {
     $httpProvider.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8';
@@ -105,6 +105,8 @@ app.run(function($rootScope) {
         console.log("Reader removed :" + event.device);
         registerDevices(event);
     });
+
+    $rootScope.isLoggedIn = false;
 });
 
 app.factory("session", function () {
@@ -384,20 +386,19 @@ app.directive('autofocus', ['$timeout', function($timeout) {
     }
 }]);
 
-app.controller("navbarCtrl", function ($scope, $http, session, $location) {
+app.controller("navbarCtrl", function ($rootScope, $scope, $http, session, $location) {
     $scope.$watch(
-        function () {
-            return session.get("token") != null;
-        },
+        function() {return $rootScope.isLoggedIn; },
         function (newVal, oldVal) {
-            $scope.isLoggedIn = newVal;
-            if (newVal != oldVal)
-            $scope.username = session.get("username");
+            if (newVal != oldVal){
+                $scope.username = session.get('username');
+            }
         }
     );
     $scope.logIO = function () {
         if ($scope.isLoggedIn){
             session.clear();
+            $rootScope.isLoggedIn = false;
             $location.url('/home');
         }else {
             $location.url('/login');
@@ -442,7 +443,7 @@ app.controller("navbarCtrl", function ($scope, $http, session, $location) {
 app.controller('indexCtrl', function () {
     window.location.href = "#/login";
 });
-app.controller('loginCtrl', function ($scope, $http, session) {
+app.controller('loginCtrl', function ($scope, $http, session, $rootScope) {
     $scope.isLoggingIn = false;
     $scope.login = function () {
         $scope.isLoggingIn = true;
@@ -450,17 +451,22 @@ app.controller('loginCtrl', function ($scope, $http, session) {
             .then(function (result) {
                     session.set("token", result.data.token);
                     session.set("username", $scope.username);
+                    $rootScope.isLoggedIn = true;
                     window.location.href = "#/home";
                 },
                 function (failResult) {
                     $scope.password = "";
                     $scope.isLoggingIn = false;
-                    alert("Sign In Failed" + JSON.stringify(failResult.data));
+                    alert("Sign In Failed:" + JSON.stringify(failResult.data));
                 });
     }
 });
-app.controller('homeCtrl', function () {
-
+app.controller('homeCtrl', function ($scope, $rootScope) {
+    $scope.goAdvanced = function(){
+        if ($rootScope.isLoggedIn){
+            window.location.href = "#/advanced";
+        }
+    }
 });
 app.controller('eventCtrl', function ($scope, $http, syncManager) {
     $scope.selected = undefined;
@@ -547,9 +553,9 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
 
     $scope.checkinStudent = function (stu) {
         $scope.networkInProgress = true;
-        if($scope.registerRFID !== undefined)
+        if($scope.registerRFID)
             registerStudent(stu, $scope.registerRFID);
-        if (stu.inTime == ''){
+        if (!stu.inTime){
             let stuTmp = angular.copy(stu);
             stuTmp.inTime = new Date().getTime().toString();
             doUploadAdd(stuTmp, 0);
@@ -568,6 +574,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                         if (s.id == $scope.students[i].id) {
                             $scope.students[i].inTime = s.inTime;
                             $scope.networkInProgress = false;
+                            $('input[name=qInput]').val('');
                             showStudent(s,true);
                             console.log(s.firstName + " added @ " + s.inTime);
                             break;
@@ -616,6 +623,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                             $scope.students[i].inTime = '';
                             $scope.networkInProgress = false;
                             console.log($scope.students[i].firstName + " removed");
+                            $('input[name=qInput]').val('');
                             showStudent($scope.students[i],true);
                             break;
                         }
@@ -646,7 +654,6 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                         }
                     }
                     $scope.registerRFID = undefined;
-                    // showStudent(s,true);
                 }
             });
         }else {
@@ -662,15 +669,12 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                     $scope.registerRFID = rfid.toUpperCase();
                     $scope.$apply();
                 }else {
-                    $scope.checkinStudent({
-                        id: row.id,
-                        firstName: row.firstName,
-                        lastName: row.lastName,
-                        inTime: row.inTime,
-                        outTime: row.outTime,
-                        rfid: row.rfid,
-                        dorm: row.dorm
-                    });
+                    $scope.students.forEach(function (stu) {
+                            if (row.id == stu.id){
+                                $scope.checkinStudent(stu);
+                            }
+                        }
+                    );
                 }
             }else {
                 console.warn('failed query from DB :'+err);

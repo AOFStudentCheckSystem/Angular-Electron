@@ -47,7 +47,7 @@
             </div>
         </div>
         <div class="col-xs-12 col-sm-6 col-md-4">
-            <a href="#/advanced">
+            <a ng-click="goAdvanced()">
                 <div class="panel panel-default">
                     <div class="panel-body text-center">
                         <i class="fa fa-code fa-icon"></i>
