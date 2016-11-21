@@ -296,13 +296,15 @@ app.factory('syncManager', function ($http) {
                 callback(null);
             });
         },
-        uploadCompleteEvent: function (eventId, callback) {
+        uploadCompleteEvent: function (local, eventId, callback) {
             $http.post(domain + 'api/event/' + eventId + '/complete', {}).then(function (suc) {
-                db.run("UPDATE `Events` SET `status` = ? WHERE `eventId` = ?", [2, eventId],function(err){
-                    if (err) {
-                        console.warn('uploadCompleteEvent DB error:' + err);
-                    }
-                });
+                if (local){
+                    db.run("UPDATE `Events` SET `status` = ? WHERE `eventId` = ?", [2, eventId],function(err){
+                        if (err) {
+                            console.warn('uploadCompleteEvent DB error:' + err);
+                        }
+                    });
+                }
                 callback(true);
             }, function (err) {
                 callback(false);
@@ -501,6 +503,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     $scope.fn = 'First Name';
     $scope.ln = 'Last Name';
     $scope.registerRFID = undefined;
+    $scope.networkInProgress = false;
     $scope.searchFilter = function (student) {
         if ($scope.q == '') {
             return student.inTime != '' && student.outTime == '' && student.lastName.substring(0, $scope.q.length).toLowerCase() === $scope.q.toLowerCase();
@@ -520,18 +523,13 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     };
 
     $scope.checkinStudent = function (stu) {
-        if($scope.registerRFID)
-            registerStudent(stu.id, $scope.registerRFID);
-
+        $scope.networkInProgress = true;
+        if($scope.registerRFID !== undefined)
+            registerStudent(stu, $scope.registerRFID);
         if (stu.inTime == ''){
-            for (let i = 0; i < $scope.students.length; i++) {
-                if (stu.id == $scope.students[i].id) {
-                    $scope.students[i].inTime = new Date().getTime().toString();
-                    doUploadAdd(stu, 0);
-                    console.log($scope.students[i].firstName + " added @ " + $scope.students[i].inTime);
-                    break;
-                }
-            }
+            let stuTmp = JSON.parse(JSON.stringify(stu));
+            stuTmp.inTime = new Date().getTime().toString();
+            doUploadAdd(stuTmp, 0);
         }else {
             showStudent(stu,false);
         }
@@ -543,16 +541,18 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                     console.warn("upload add failed @ attempt" + cnt);
                     doUploadAdd(s, cnt + 1);
                 } else {
-                    showStudent(s,true);
+                    for (let i = 0; i < $scope.students.length; i++) {
+                        if (s.id == $scope.students[i].id) {
+                            $scope.students[i].inTime = s.inTime;
+                            $scope.networkInProgress = false;
+                            showStudent(s,true);
+                            console.log(s.firstName + " added @ " + s.inTime);
+                            break;
+                        }
+                    }
                 }
             });
         }else{
-            for (let i = 0; i < $scope.students.length; i++) {
-                if (stu.id == $scope.students[i].id) {
-                    $scope.students[i].inTime = "";
-                    break;
-                }
-            }
             alert("upload add "+s.lastName+" "+s.firstName+" failed! Student is not checked in!");
         }
     };
@@ -577,14 +577,8 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
 
     $scope.deleteStudent = function (stu) {
         // if (confirm('Do you really want to remove this student?')) {
-            for (let i = 0; i < $scope.students.length; i++) {
-                if (stu.id == $scope.students[i].id) {
-                    $scope.students[i].inTime = '';
-                    console.log(stu.firstName + " removed");
-                    doUploadRm($scope.students[i], 0);
-                    break;
-                }
-            }
+        $scope.networkInProgress = true;
+        doUploadRm(stu, 0);
         // }
     };
     let doUploadRm = function (s, cnt) {
@@ -597,6 +591,8 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                     for (let i = 0; i < $scope.students.length; i++) {
                         if (s.id == $scope.students[i].id) {
                             $scope.students[i].inTime = '';
+                            $scope.networkInProgress = false;
+                            console.log($scope.students[i].firstName + " removed");
                             showStudent($scope.students[i],true);
                             break;
                         }
@@ -608,14 +604,10 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
         }
     };
 
-    let registerStudent = function (id, rfid) {
-        for (let i = 0; i < $scope.students.length; i++) {
-            if (id == $scope.students[i].id) {
-                $scope.students[i].rfid = rfid;
-                doUploadReg($scope.students[i], 0);
-                break;
-            }
-        }
+    let registerStudent = function (stu, rfid) {
+        let stuTmp = stu;
+        stuTmp.rfid = rfid;
+        doUploadReg(stuTmp, 0);
     };
     let doUploadReg = function (s, cnt) {
         if (cnt < 3) {
@@ -624,8 +616,14 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                     console.warn("upload remove failed @ attempt" + cnt);
                     doUploadReg(s, cnt + 1);
                 } else {
+                    for (let i = 0; i < $scope.students.length; i++) {
+                        if (s.id == $scope.students[i].id) {
+                            $scope.students[i].rfid = s.rfid;
+                            break;
+                        }
+                    }
                     $scope.registerRFID = undefined;
-                    showStudent(s,true);
+                    // showStudent(s,true);
                 }
             });
         }else {
@@ -729,11 +727,14 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager) {
     };
     $scope.completeEvent = function () {
         if (confirm('Do you really want to complete this event?')){
-            syncManager.uploadCompleteEvent($scope.selected.eventId, function (ret) {
-                syncManager.readUncompletedEvents(function (ret2) {
-                    $scope.events = ret2;
-                    $scope.$apply();
-                });
+            syncManager.uploadCompleteEvent(false, $scope.selected.eventId, function (ret) {
+                // syncManager.readUncompletedEvents(function (ret2) {
+                //     $scope.events = ret2;
+                //     $scope.$apply();
+                // });
+                if (ret){
+                    updateEvents();
+                }
             });
         }
     }
