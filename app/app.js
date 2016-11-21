@@ -527,7 +527,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
         if($scope.registerRFID !== undefined)
             registerStudent(stu, $scope.registerRFID);
         if (stu.inTime == ''){
-            let stuTmp = JSON.parse(JSON.stringify(stu));
+            let stuTmp = angular.copy(stu);
             stuTmp.inTime = new Date().getTime().toString();
             doUploadAdd(stuTmp, 0);
         }else {
