@@ -12,7 +12,7 @@
                 <div style="max-height: 70vh; overflow-y: scroll">
                     <a class="list-group-item" ng-repeat="event in events | filter:activeFilter" ng-click="selectItem(event)" ng-class="{active: isActive(event)}">
                         <h4 class="list-group-item-heading">{{event.eventName}}</h4>
-                        <p class="list-group-item-text">{{event.eventStatus==0?"Planning":(event.eventStatus==1?"Boarding":"Completed")}}{{event.eventStatus}}</p>
+                        <p class="list-group-item-text">{{event.eventStatus==0?"Planning":(event.eventStatus==1?"Boarding":"Completed")}} (Status code:{{event.eventStatus}})</p>
                     </a>
                 </div>
             </div>

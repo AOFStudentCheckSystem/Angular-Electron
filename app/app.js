@@ -795,27 +795,33 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
 });
 app.controller('advancedCtrl', function ($scope, syncManager) {
     $scope.downloadStudentInfo = function () {
-        $scope.downloadStudentInfoInProgress = true;
-        syncManager.downloadStudentInfo(function (ret) {
-            $scope.downloadStudentInfoInProgress = false;
-        });
+        if (!$scope.downloadStudentInfoInProgress) {
+            $scope.downloadStudentInfoInProgress = true;
+            syncManager.downloadStudentInfo(function (ret) {
+                $scope.downloadStudentInfoInProgress = false;
+            });
+        }
     };
     $scope.downloadEvents = function () {
-        $scope.downloadEventsInProgress = true;
-        syncManager.downloadEvents(function (ret) {
-            $scope.downloadEventsInProgress = false;
-        });
+        if (!$scope.downloadEventsInProgress){
+            $scope.downloadEventsInProgress = true;
+            syncManager.downloadEvents(function (ret) {
+                $scope.downloadEventsInProgress = false;
+            });
+        }
     };
     $scope.downloadPics = function () {
-        $scope.value = 0;
-        $scope.downloadPicsInProgress = true;
-        syncManager.downloadPics(function (cur, max) {
-            if (max != null){$scope.maxv = max}
-            if (cur) ++$scope.value;
-            if ($scope.value >= $scope.maxv){
-                $scope.downloadPicsInProgress = false;
-            }
-        })
+        if(!$scope.downloadPicsInProgress){
+            $scope.value = 0;
+            $scope.downloadPicsInProgress = true;
+            syncManager.downloadPics(function (cur, max) {
+                if (max != null){$scope.maxv = max}
+                if (cur) ++$scope.value;
+                if ($scope.value >= $scope.maxv){
+                    $scope.downloadPicsInProgress = false;
+                }
+            });
+        }
     };
     $scope.removePics = function () {
         fs.removeSync(photoPath);
