@@ -12,7 +12,7 @@
                 <div style="max-height: 70vh; overflow-y: scroll">
                     <a class="list-group-item" ng-repeat="event in events | filter:activeFilter" ng-click="selectItem(event)" ng-class="{active: isActive(event)}">
                         <h4 class="list-group-item-heading">{{event.eventName}}</h4>
-                        <p class="list-group-item-text">{{event.eventStatus==0?"Planning":(event.eventStatus==1?"Boarding":"Completed")}}</p>
+                        <p class="list-group-item-text">{{event.eventStatus==0?"Planning":(event.eventStatus==1?"Boarding":"Completed")}}{{event.eventStatus}}</p>
                     </a>
                 </div>
             </div>
@@ -20,13 +20,13 @@
     </div>
     <div class="row">
         <div class="col-xs-12 col-md-6" style="margin-bottom:10px">
-            <button class="btn btn-danger btn-block" ng-disabled="selected == undefined" ng-click="completeEvent()">Complete Event</button>
+            <button class="btn btn-danger btn-block" ng-disabled="selected == undefined || networkInProgress" ng-click="completeEvent()">Complete Event</button>
         </div>
-        <div class="col-xs-12" ng-class="{'col-md-6':!localEvent}" ng-show="!localEvent" style="margin-bottom:10px">
-            <button class="btn btn-primary btn-block" ng-disabled="selected == undefined" ng-click="checkOutEvent()">Checkout Event</button>
+        <div class="col-xs-12 col-md-6" ng-show="!localEvent" style="margin-bottom:10px">
+            <button class="btn btn-primary btn-block" ng-disabled="selected == undefined || networkInProgress" ng-click="checkOutEvent()">Checkout Event</button>
         </div>
-        <div class="col-xs-12" ng-class="{'col-md-6':localEvent}" ng-show="localEvent" style="margin-bottom:10px">
-            <button class="btn btn-success btn-block" ng-click="">Upload Event {{localEvent.eventName}}</button>
+        <div class="col-xs-12 col-md-6" ng-show="localEvent" style="margin-bottom:10px">
+            <button class="btn btn-success btn-block" ng-disabled="networkInProgress" ng-click="uploadEvent()">Upload Event "{{localEvent.eventName}}"</button>
         </div>
     </div>
 </div>

@@ -41,6 +41,15 @@ const photoPath = eapp.getPath('appData') + '/student-check-electron-angular/pic
 const domain = "http://hn2.guardiantech.com.cn:10492/v2/";
 const placeHolderPic = 'http://placekitten.com/300/450';
 
+/**
+ * standardize nulls
+ * @param s if input is null, undefined, 'null'(of any cases)
+ * @returns {string} return '' else s
+ */
+let standardize = function (s) {
+    return !s || s.toUpperCase() == 'NULL' ? '' : s;
+};
+
 let app = angular.module("studentCheck", ['ngRoute', 'routeStyles'], function ($httpProvider) {
     $httpProvider.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8';
     let param = function (obj) {
@@ -172,7 +181,7 @@ app.factory('syncManager', function ($http) {
          * @param callback return events while succeed, return null if failed
          */
         downloadEvents: function (callback) {
-            $http.get(domain + '/api/event/list').then(function (result) {
+            $http.get(domain + 'api/event/list').then(function (result) {
                 // if (local){
                 //     db.serialize(function () {
                 //         db.run("BEGIN TRANSACTION");
@@ -216,15 +225,11 @@ app.factory('syncManager', function ($http) {
         // },
         /**
          * Download event detail (students)
-         * @param local write to DB if true
          * @param eventId Event ID
          * @param callback return students while succeed, return null if failed
          */
-        downloadEventStudents: function (local, eventId, callback) {
+        downloadEventStudents: function (eventId, callback) {
             $http.get(domain + 'api/event/' + eventId + '/detail').then(function (result) {
-                if (local){
-                    //todo:offline
-                }
                 callback(result.data.students);
             }, function (error) {
                 alert("Download Student @ " + eventId + " Error!");
@@ -235,7 +240,7 @@ app.factory('syncManager', function ($http) {
             console.log(photoPath);
             fs.ensureDirSync(photoPath);
             db.each("SELECT * FROM `StudentInfo`",[],function (err, row) {
-                    $http.get(domain + '/api/student/'+ row.id +'/image',{responseType: 'arraybuffer'}).then(function (result) {
+                    $http.get(domain + 'api/student/'+ row.id +'/image',{responseType: 'arraybuffer'}).then(function (result) {
                         let f = fs.createWriteStream(photoPath + '/' + row.id + '.jpg');
                         f.write(Buffer.from(result.data),function (err, written, string) {
                             if (err) console.warn(err.code);
@@ -255,7 +260,7 @@ app.factory('syncManager', function ($http) {
 
         /**
          * Upload add students to server
-         * @param students Array of students, need at least id, checkinTime, checkoutTime
+         * @param students Array of students, need at least id, inTime, outTime
          * @param eventId Event ID
          * @param callback true if succeed, false if failed;
          */
@@ -317,6 +322,12 @@ app.factory('syncManager', function ($http) {
                 callback(false);
             });
         },
+        /**
+         * update student rfid
+         * @param id student id
+         * @param rfid new rfid
+         * @param callback true if 200, else false
+         */
         uploadRegister: function (id, rfid, callback) {
             $http.post(domain + 'api/student/'+id+'/update',{rfid:rfid}).then(function(suc){
                 db.run('UPDATE `StudentInfo` SET `rfid` = ? WHERE id = ?',[rfid,id],function(err){
@@ -339,8 +350,15 @@ app.factory('syncManager', function ($http) {
                 }
             );
         },
-        uploadGiveBackEvent: function (eventId, callback) {
-            //TODO: JUST DO IT
+        uploadGiveBackEvent: function (event, callback) {
+            $http.post(domain + 'api/event/'+event.eventId+'/return',{authKey:event.token}).then(
+                function (suc) {
+                    callback(true);
+                },
+                function (err) {
+                    callback(false);
+                }
+            );
         }
     };
 });
@@ -534,7 +552,7 @@ app.controller('eventCtrl', function ($scope, $http, syncManager) {
         return event.eventStatus != 2;
     };
 });
-app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManager) {
+app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManager, $rootScope) {
     $scope.students = [];
     let eventId = $routeParams.eventId;
     db.all("SELECT * FROM `StudentInfo`", function (err, rows) {
@@ -549,20 +567,38 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                 dorm: row.dorm
             });
         });
-        syncManager.downloadEventStudents(false, eventId, function (ret) {
-            if (ret != null) {
-                for (let i = 0; i < ret.length; i++) {
+        if ($rootScope.isLoggedIn){
+            syncManager.downloadEventStudents(eventId, function (ret) {
+                if (ret != null) {
+                    for (let i = 0; i < ret.length; i++) {
+                        for (let k = 0; k < $scope.students.length; k++) {
+                            if ($scope.students[k].id === ret[i].studentId) {
+                                $scope.students[k].inTime = standardize(ret[i].checkinTime);
+                                $scope.students[k].outTime = standardize(ret[i].checkoutTime);
+                                console.log("id:" + $scope.students[k].id + " in:" + $scope.students[k].inTime + " out:" + $scope.students[k].outTime);
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        else {
+            db.all("SELECT * FROM `StudentCheck` WHERE `eventId` = ?",[eventId],function (err, rows) {
+                for (let i = 0; i < rows.length; i++) {
                     for (let k = 0; k < $scope.students.length; k++) {
-                        if ($scope.students[k].id === ret[i].studentId) {
-                            $scope.students[k].inTime = ret[i].checkinTime;
-                            $scope.students[k].outTime = ret[i].checkoutTime == null ? '' : ret[i].checkoutTime;
+                        if ($scope.students[k].id === rows[i].id) {
+                            $scope.students[k].inTime = standardize(rows[i].inTime);
+                            $scope.students[k].outTime = standardize(rows[i].outTime);
                             console.log("id:" + $scope.students[k].id + " in:" + $scope.students[k].inTime + " out:" + $scope.students[k].outTime);
                             break;
                         }
                     }
                 }
-            }
-        });
+                $scope.$apply();
+            });
+        }
+
     });
     $scope.q = '';
     $scope.pic = placeHolderPic;
@@ -572,18 +608,18 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     $scope.networkInProgress = false;
     $scope.searchFilter = function (student) {
         if ($scope.q == '') {
-            return student.inTime != '' && student.outTime == '' && student.lastName.substring(0, $scope.q.length).toLowerCase() === $scope.q.toLowerCase();
+            return student.inTime && !student.outTime && student.lastName.substring(0, $scope.q.length).toLowerCase() === $scope.q.toLowerCase();
         } else {
             return student.lastName.substring(0, $scope.q.length).toLowerCase() === $scope.q.toLowerCase();
         }
     };
     $scope.isCheckedIn = function (student) {
-        return (student.inTime != '' && student.outTime == '')
+        return (student.inTime && !student.outTime)
     };
     $scope.getCheckinLen = function () {
         let n = 0;
         $scope.students.forEach(function (student) {
-            if (student.inTime != '' && student.outTime == '') n++;
+            if (student.inTime && !student.outTime) n++;
         });
         return n;
     };
@@ -593,9 +629,23 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
         if($scope.registerRFID)
             registerStudent(stu, $scope.registerRFID);
         if (!stu.inTime){
-            let stuTmp = angular.copy(stu);
-            stuTmp.inTime = new Date().getTime().toString();
-            doUploadAdd(stuTmp, 0);
+            if ($rootScope.isLoggedIn){
+                //online
+                let stuTmp = angular.copy(stu);
+                stuTmp.inTime = new Date().getTime().toString();
+                doUploadAdd(stuTmp, 0);
+            }else {
+                //offline
+                let time = new Date().getTime().toString();
+                db.run("INSERT OR REPLACE INTO `StudentCheck` ('id','eventId','inTime','outTime') VALUES (?,?,?,?)",[stu.id, eventId, time, stu.outTime],function(err){
+                    if (!err){
+                        stu.inTime = time;
+                        $scope.q = '';
+                        $scope.networkInProgress = false;
+                        showStudent(stu,false);
+                    }
+                });
+            }
         }else {
             showStudent(stu,false);
         }
@@ -645,7 +695,19 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     $scope.deleteStudent = function (stu) {
         // if (confirm('Do you really want to remove this student?')) {
         $scope.networkInProgress = true;
-        doUploadRm(stu, 0);
+        if ($rootScope.isLoggedIn){
+            doUploadRm(stu, 0);
+        }else {
+            db.run("DELETE FROM `StudentCheck` WHERE `id` = ? AND `eventId` = ?",[stu.id,eventId],function (err) {
+                if (!err){
+                    stu.inTime = '';
+                    console.log(stu+ " removed");
+                    $scope.q = '';
+                    $scope.networkInProgress = false;
+                    showStudent(stu,false);
+                }
+            });
+        }
         // }
     };
     let doUploadRm = function (s, cnt) {
@@ -673,9 +735,19 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     };
 
     let registerStudent = function (stu, rfid) {
-        let stuTmp = stu;
-        stuTmp.rfid = rfid;
-        doUploadReg(stuTmp, 0);
+        if ($rootScope.isLoggedIn){
+            let stuTmp = stu;
+            stuTmp.rfid = rfid;
+            doUploadReg(stuTmp, 0);
+        }else {
+            db.serialize(function () {
+                db.run("INSERT OR REPLACE INTO `StudentReg` ('id','rfid') VALUES (?,?)",[stu.id, rfid.toUpperCase()]);
+                db.run("UPDATE `StudentInfo` SET `rfid` = ? WHERE `id` = ?",[rfid.toUpperCase(), stu.id]);
+                $scope.registerRFID = undefined;
+                stu.rfid = rfid;
+            });
+        }
+
     };
     let doUploadReg = function (s, cnt) {
         if (cnt < 3) {
@@ -686,11 +758,12 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                 } else {
                     for (let i = 0; i < $scope.students.length; i++) {
                         if (s.id == $scope.students[i].id) {
+                            $scope.registerRFID = undefined;
                             $scope.students[i].rfid = s.rfid;
                             break;
                         }
                     }
-                    $scope.registerRFID = undefined;
+
                 }
             });
         }else {
@@ -758,29 +831,27 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager) {
     $scope.events = [];
     $scope.eventName = '';
     $scope.localEvent = undefined;
+    $scope.networkInProgress = true;
 
     let updateEvents = function () {
-        syncManager.downloadEvents(function (ret1) {
-            // syncManager.readUncompletedEvents(function (ret2) {
-            //     $scope.events = ret2;
-            //     $scope.$apply();
-            // });
-            $scope.events = ret1;
-            db.get("SELECT * FROM `Events`",[],function (err, row) {
-                if (row){
-                    $scope.localEvent = {
-                        eventId:row.eventId,
-                        eventName:row.eventName,
-                        eventTime:row.eventTime,
-                        eventStatus:row.status,
-                        token:row.token
-                    };
-                    // $scope.events.push(events);
-                }else {
-                    $scope.localEvent = undefined;
-                }
+        db.get("SELECT * FROM `Events`",[],function (err, row) {
+            if (row){
+                $scope.localEvent = {
+                    eventId:row.eventId,
+                    eventName:row.eventName,
+                    eventTime:row.eventTime,
+                    eventStatus:row.status,
+                    token:row.token
+                };
+            }else {
+                $scope.localEvent = undefined;
+            }
+            syncManager.downloadEvents(function (ret1) {
+                $scope.events = ret1;
+                $scope.networkInProgress = false;
             });
         });
+
     };
     // $http.get(domain + "api/event/list").then(function (successReturn) {
     //     $scope.events = successReturn.data.events;
@@ -794,18 +865,21 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager) {
         return $scope.selected == item;
     };
     $scope.activeFilter = function (event) {
-        return event.eventStatus != 2 ||(event == $scope.localEvent);
+        return event.eventStatus != 2;
     };
     $scope.addEvent = function () {
+        $scope.networkInProgress = true;
         let n = $scope.eventName;
         syncManager.uploadAddEvent(n, function (ret) {
             if (ret !== null) {
                 updateEvents();
+                $scope.networkInProgress = false;
             }
         });
     };
     $scope.completeEvent = function () {
         if (confirm('Do you really want to complete this event?')){
+            $scope.networkInProgress = true;
             syncManager.uploadCompleteEvent(false, $scope.selected.eventId, function (ret) {
                 // syncManager.readUncompletedEvents(function (ret2) {
                 //     $scope.events = ret2;
@@ -813,11 +887,13 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager) {
                 // });
                 if (ret){
                     updateEvents();
+                    $scope.networkInProgress = false;
                 }
             });
         }
     };
     $scope.checkOutEvent = function () {
+        $scope.networkInProgress = true;
         let evt = angular.copy($scope.selected);
         syncManager.uploadCheckoutEvent(evt.eventId, function (ret) {
             if (ret){
@@ -827,11 +903,12 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager) {
                             db.run("BEGIN TRANSACTION");
                             let stmt = db.prepare("INSERT OR REPLACE INTO `StudentCheck` ('id','eventId','inTime','outTime') VALUES (?,?,?,?)");
                             ret.students.forEach(function (stu) {
-                                stmt.run([stu.studentId, evt.eventId, stu.checkinTime, stu.checkoutTime]);
+                                stmt.run([stu.studentId, evt.eventId, standardize(stu.checkinTime), standardize(stu.checkoutTime)]);
                             });
                             stmt.finalize();
                             db.run("COMMIT");
                             updateEvents();
+                            $scope.networkInProgress = false;
                         });
                     }
                 });
@@ -840,12 +917,81 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager) {
             }
         });
     };
-    $scope.UploadEvent = function () {
-        let evt = angular.copy($scope.selected);
-        syncManager.uploadGiveBackEvent(evt.eventId, function (ret) {
-            //TODO: Continue this alone with syncManager
+    $scope.uploadEvent = function () {
+        $scope.networkInProgress = true;
+        let evt = $scope.localEvent;
+        let add = [];
+        let reg = [];
+        db.all("SELECT * FROM `StudentCheck` WHERE `eventId` = ?",[evt.id],function (err, rows) {
+            rows.forEach(function (row) {
+                add.push({
+                    id: row.id,
+                    inTime: row.inTime,
+                    outTime: row.outTime
+                });
+            });
+            console.log("add array created");
+            db.all("SELECT * FROM `StudentReg`",[],function (err, rows) {
+                rows.forEach(function (row) {
+                    reg.push({
+                        id:row.id,
+                        rfid:row.rfid
+                    });
+                });
+                console.log("reg array created");
+                uploadEvents(evt, add, reg);
+            });
         });
     };
+
+    let uploadEvents = function (evt, add, reg) {
+        syncManager.uploadGiveBackEvent(evt, function (ret) {
+            console.log("uploadGiveBackEvent");
+            if (ret){
+                db.run("DELETE FROM `Events` WHERE `eventId` = ?",[evt.eventId],function (err) {
+                    if (!err){
+                        syncManager.uploadAddStudent(add, evt.eventId ,function (ret) {
+                            console.log("uploadAddStudent");
+                            if(ret){
+                                db.run("DELETE FROM `StudentCheck`",[],function (err) {
+                                    console.log("DELETE FROM `StudentCheck`");
+                                    if (!err){
+                                        if (reg.length == 0){
+                                            updateEvents();
+                                            $scope.networkInProgress = false;
+                                        }else {
+                                            let cnt = 0;
+                                            reg.forEach(function (stu) {
+                                                syncManager.uploadRegister(stu.id, stu.rfid, function (ret) {
+                                                    cnt += 1;
+                                                    console.log("uploadRegister");
+                                                    if (ret){
+                                                        db.run("DELETE FROM `StudentReg` WHERE `id` = ?",[stu.id],function (err) {
+                                                            if (cnt >= reg.length){
+                                                                updateEvents();
+                                                                $scope.networkInProgress = false;
+                                                            }
+                                                        });
+                                                    }else {
+                                                        console.warn("update "+ stu.id +" failed!");
+                                                        if (cnt >= reg.length){
+                                                            updateEvents();
+                                                            $scope.networkInProgress = false;
+                                                        }
+                                                    }
+                                                });
+                                            });
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+        });
+
+    }
 });
 app.controller('regCtrl', function ($scope, syncManager, $rootScope) {
     $scope.students = [];
@@ -891,14 +1037,16 @@ app.controller('regCtrl', function ($scope, syncManager, $rootScope) {
         doReg($scope.selectedStudent, $scope.regRfid, 0);
         else {
             db.run("INSERT OR REPLACE INTO `StudentReg` ('id','rfid') VALUES (?,?)",[$scope.selectedStudent.id, $scope.regRfid.toUpperCase()],function (err) {
-                db.run("UPDATE `StudentInfo` SET `rfid` = ? WHERE `id` = ?",[$scope.regRfid.toUpperCase(), $scope.selectedStudent.id],function (err) {
-                    if (!err){
-                        $scope.regRfid = undefined;
-                        $scope.q = '';
-                        showStudent($scope.selectedStudent,false);
-                        $scope.selectedStudent = undefined;
-                    }
-                });
+                if (!err){
+                    db.run("UPDATE `StudentInfo` SET `rfid` = ? WHERE `id` = ?",[$scope.regRfid.toUpperCase(), $scope.selectedStudent.id],function (err) {
+                        if (!err){
+                            $scope.regRfid = undefined;
+                            $scope.q = '';
+                            showStudent($scope.selectedStudent,false);
+                            $scope.selectedStudent = undefined;
+                        }
+                    });
+                }
             });
         }
     };
