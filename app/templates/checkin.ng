@@ -3,6 +3,7 @@
         <h1 ng-show="registerRFID !== undefined">Please register this card</h1>
         <div class="col-xs-6 text-right" ng-show = "registerRFID === undefined">
             <img ng-src="{{pic}}" alt="No photo available, try download the photo again."/>
+            <h2>{{nn}}</h2>
             <h2>{{fn}}</h2>
             <h2>{{ln}}</h2>
             <h2>Count: {{getCheckinLen()}}</h2>
