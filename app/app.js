@@ -1,10 +1,10 @@
-const smartcard = require('smartcard');
+let smartcard;
 const electron = require('electron');
 const fs = require('fs-extra');
 const sqlite3 = require('sqlite3');
 const eapp = electron.remote.app;
-const Devices = smartcard.Devices;
-const devices = new Devices();
+let Devices;
+let devices;
 let currentDevices = [];
 let db;
 const photoPath = eapp.getPath('appData') + '/student-check-electron-angular/pics';
@@ -59,7 +59,11 @@ let app = angular.module("studentCheck", ['ngRoute', 'routeStyles','ngAnimate', 
     }];
 });
 
-app.run(function ($rootScope) {
+app.run(function ($rootScope, toastr) {
+    smartcard = require('smartcard');
+    Devices = smartcard.Devices;
+    devices = new Devices();
+
     let registerDevices = function (event) {
         currentDevices = event.devices;
         currentDevices.forEach(function (device) {
@@ -71,6 +75,7 @@ app.run(function ($rootScope) {
             device.on('card-removed', event => {
             });
             device.on('error', event => {
+                toastr.error('Card reading error! Please try again!');
                 console.error("Card Reader Error: " + event);
             });
         });
@@ -105,7 +110,7 @@ app.factory("session", function () {
         }
     };
 });
-app.factory('httpInterceptor', ['$q', '$injector', 'session', function ($q, $injector, session) {
+app.factory('httpInterceptor', function ($q, $injector, session) {
     let httpInterceptor = {
         'responseError': function (response) {
             return $q.reject(response);
@@ -115,7 +120,7 @@ app.factory('httpInterceptor', ['$q', '$injector', 'session', function ($q, $inj
         },
         'request': function (config) {
             if (session.get("token") !== undefined && session.get("token") != "") {
-                config.headers['Authorization'] = "Bearer " + session.get("token");
+                config.headers['Authorization'] = session.get("token");
             }
             return config;
         },
@@ -124,9 +129,28 @@ app.factory('httpInterceptor', ['$q', '$injector', 'session', function ($q, $inj
         }
     };
     return httpInterceptor;
-}]);
+});
 //Network & DB
-app.factory('syncManager', function ($http) {
+app.factory('syncManager', function ($http, toastr, session, $rootScope) {
+    let checkErr = function (err) {
+        if (err.status === 401){
+            $http.post(domain + 'api/auth/verify', {}).then(function (suc) {
+                //No permission
+                    toastr.error('You do not have permission to do this! ' + suc.data.emoticon);
+                    return true;
+                },
+                function (error) {
+                //Token timeout
+                    $rootScope.isLoggedIn = false;
+                    session.clear();
+                    window.location.href = '#/home';
+                    toastr.error('You have been idling for too long and you are logged out!');
+                    return false;
+                });
+        }else {
+            return true;
+        }
+    };
     return {
         downloadStudentInfo: function (callback) {
             $http.get(domain + 'api/student/all').then(function (result) {
@@ -143,8 +167,7 @@ app.factory('syncManager', function ($http) {
                     callback(true);
                 });
             }, function (error) {
-                alert("Download Students Error!");
-                callback(false);
+                if (checkErr(error)) callback(false);
             });
         },
         /**
@@ -155,8 +178,7 @@ app.factory('syncManager', function ($http) {
             $http.get(domain + 'api/event/list').then(function (result) {
                 callback(result.data.events);
             }, function (error) {
-                alert("Download Events Error!");
-                callback(null);
+                if (checkErr(error)) callback(null);
             });
         },
         /**
@@ -168,8 +190,7 @@ app.factory('syncManager', function ($http) {
             $http.get(domain + 'api/event/' + eventId + '/detail').then(function (result) {
                 callback(result.data.students);
             }, function (error) {
-                alert("Download Student @ " + eventId + " Error!");
-                callback(null);
+                if (checkErr(error)) callback(null);
             });
         },
         downloadPics: function (callback) {
@@ -185,7 +206,7 @@ app.factory('syncManager', function ($http) {
                         });
                         callback(true, null);
                     }, function (error) {
-                        console.warn('http error occur @' + row.id + ' :' + error);
+                        toastr.warning('http error occur @' + row.id + ' :' + error);
                         callback(true, null);
                     });
                 },
@@ -216,7 +237,7 @@ app.factory('syncManager', function ($http) {
             }).then(function (suc) {
                 callback(true);
             }, function (err) {
-                callback(false);
+                if (checkErr(err)) callback(false);
             });
 
         },
@@ -234,14 +255,14 @@ app.factory('syncManager', function ($http) {
             $http.post(domain + 'api/event/' + eventId + '/remove', {data: JSON.stringify({remove: rmArr})}).then(function (suc) {
                 callback(true);
             }, function (err) {
-                callback(false);
+                if (checkErr(err)) callback(false);
             });
         },
         uploadAddEvent: function (eventName, callback) {
             $http.post(domain + 'api/event/add', {eventName: eventName}).then(function (suc) {
                 callback(suc.data);
             }, function (err) {
-                callback(null);
+                if (checkErr(err)) callback(null);
             });
         },
         uploadCompleteEvent: function (eventId, callback) {
@@ -255,7 +276,7 @@ app.factory('syncManager', function ($http) {
                 // }
                 callback(true);
             }, function (err) {
-                callback(false);
+                if (checkErr(err)) callback(false);
             });
         },
         /**
@@ -273,7 +294,7 @@ app.factory('syncManager', function ($http) {
                     callback(true);
                 });
             }, function (err) {
-                callback(false);
+                if (checkErr(err)) callback(false);
             })
         },
         uploadCheckoutEvent: function (eventId, callback) {
@@ -282,7 +303,7 @@ app.factory('syncManager', function ($http) {
                     callback(suc.data);
                 },
                 function (err) {
-                    callback(null);
+                    if (checkErr(err)) callback(null);
                 }
             );
         },
@@ -292,7 +313,7 @@ app.factory('syncManager', function ($http) {
                     callback(true);
                 },
                 function (err) {
-                    callback(false);
+                    if (checkErr(err)) callback(false);
                 }
             );
         }
@@ -307,24 +328,21 @@ app.config(function ($routeProvider) {
         .when("/login", {
             templateUrl: 'templates/login.ng',
             controller: 'loginCtrl',
-            // css: 'templates/login.css'
         })
         .when("/home", {
             templateUrl: 'templates/home.ng',
-            // css: 'templates/home.css',
             controller: 'homeCtrl'
         })
         .when("/event", {
             templateUrl: 'templates/event.ng',
             controller: 'eventCtrl'
         })
-        .when("/checkin/:eventId", {
+        .when("/checkin/:eventId/:eventName", {
             templateUrl: 'templates/checkin.ng',
             controller: 'checkinCtrl'
         })
         .when("/advanced", {
             templateUrl: 'templates/advanced.ng',
-            // css: 'templates/advanced.css',
             controller: 'advancedCtrl'
         })
         .when("/events", {
@@ -484,7 +502,7 @@ app.controller('loginCtrl', function ($scope, $http, session, $rootScope, toastr
                 function (failResult) {
                     $scope.password = "";
                     $scope.isLoggingIn = false;
-                    toastr.error("Sign In Failed: " + JSON.stringify(failResult.data));
+                    toastr.error("Sign In Failed: " + JSON.stringify(failResult.data),{timeOut:10000});
                 });
     }
 });
@@ -494,13 +512,13 @@ app.controller('homeCtrl', function ($scope, $rootScope, toastr) {
             if ($rootScope.isLoggedIn)
                 window.location.href = "#/event";
             else
-                toastr.info("Please log in and go to Events menu to check out an event!",{timeOut:10000});
+                toastr.warning("Please log in and go to Events menu to check out an event!",{timeOut:10000});
         } else {
             if
-            ($rootScope.isLoggedIn) toastr.info("Please go to Events menu to give back the local event!",{timeOut:10000});
+            ($rootScope.isLoggedIn) toastr.warning("Please go to Events menu to give back the local event!",{timeOut:10000});
             else {
                 toastr.info('You are checking in for event "' + $rootScope.localEvent.eventName + '"');
-                window.location.href = "#/checkin/" + $rootScope.localEvent.eventId;
+                window.location.href = "#/checkin/" + $rootScope.localEvent.eventId + '/' + $rootScope.localEvent.eventName;
             }
 
         }
@@ -515,7 +533,7 @@ app.controller('homeCtrl', function ($scope, $rootScope, toastr) {
             if (!$rootScope.localEvent){
                 window.location.href = "#/register";
             }else {
-                toastr.info("Please go to Events menu to give back the local event!",{timeOut:10000});
+                toastr.warning("Please go to Events menu to give back the local event!",{timeOut:10000});
             }
         }
     };
@@ -531,7 +549,11 @@ app.controller('eventCtrl', function ($scope, $http, syncManager, toastr) {
 
     let updateEvents = function () {
         syncManager.downloadEvents(function (ret1) {
-            $scope.events = ret1;
+            if (ret1){
+                $scope.events = ret1;
+            }else {
+                toastr.error('Failed to fetch event list!',{timeOut:10000});
+            }
         });
     };
     updateEvents();
@@ -543,13 +565,9 @@ app.controller('eventCtrl', function ($scope, $http, syncManager, toastr) {
         return $scope.selected == item;
     };
     $scope.continueEvent = function () {
-        if ($scope.selected < 0) {
-            alert("Please select a event!");
-        } else {
-            console.log($scope.selected.eventId);
-            toastr.info('You are checking in for event "' + $scope.selected.eventName + '"',{timeOut:10000});
-            window.location.href = "#/checkin/" + $scope.selected.eventId;
-        }
+        console.log($scope.selected.eventId);
+        toastr.info('You are checking in for event "' + $scope.selected.eventName + '"',{timeOut:10000});
+        window.location.href = "#/checkin/" + $scope.selected.eventId + '/' +  $scope.selected.eventName;
     };
     $scope.activeFilter = function (event) {
         return event.eventStatus != 2;
@@ -557,10 +575,11 @@ app.controller('eventCtrl', function ($scope, $http, syncManager, toastr) {
 });
 app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManager, $rootScope, toastr) {
     $scope.students = [];
+    $scope.eventName = $routeParams.eventName;
     let eventId = $routeParams.eventId;
     db.all("SELECT * FROM `StudentInfo`", function (err, rows) {
         if (!rows){
-            toastr.error('Database is empty! Please go to Advanced -> Download Students');
+            toastr.error('Database is empty! Please go to Advanced -> Download Students',{timeOut:10000});
         }else {
             rows.forEach(function (row) {
                 $scope.students.push({
@@ -684,6 +703,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
             });
         } else {
             toastr.error(s.nickName + " is not checked in due to network error! Please try again!",{timeOut:10000});
+            $scope.networkInProgress = false;
         }
     };
 
@@ -691,7 +711,12 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     let showStudent = function (student, changed) {
         if (dispTimeout !== undefined)
             clearTimeout(dispTimeout);
-        $scope.pic = photoPath + '/' + student.id + '.jpg';
+        if (fs.existsSync(photoPath + '/' + student.id + '.jpg')){
+            $scope.pic = photoPath + '/' + student.id + '.jpg';
+        }else {
+            $scope.pic = 'http://wiki.bdtnrm.org.au/images/8/8d/Empty_profile.jpg';
+            toastr.error('Photo not found, please go to Advanced -> Download Photos');
+        }
         $scope.fn = student.firstName;
         $scope.ln = student.lastName;
         $scope.nn = student.nickName;
@@ -746,6 +771,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
             });
         } else {
             toastr.error(s.nickName + " is not removed due to network error! Please try again!",{timeOut:10000});
+            $scope.networkInProgress = false;
         }
     };
 
@@ -785,6 +811,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
             });
         } else {
             toastr.error(s.nickName + " is not registered due to network error! Please try again!",{timeOut:10000});
+            $scope.networkInProgress = false;
         }
     };
 
@@ -910,6 +937,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                 $scope.eventName = '';
             }else {
                 toastr.error('Failed to add event!',{timeOut:10000});
+                $scope.networkInProgress = false;
             }
         });
     };
@@ -935,6 +963,9 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
             if (ret) {
                 toastr.success('Completed event "' + evt.eventName + '"');
                 updateEvents();
+                $scope.networkInProgress = false;
+            }else {
+                toastr.error('Failed to completed event "' + evt.eventName + '" !');
                 $scope.networkInProgress = false;
             }
         });
@@ -965,6 +996,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                 });
             } else {
                 toastr.error("Check out failed!",{timeOut:10000});
+                $scope.networkInProgress = false;
             }
         });
     };
@@ -1028,7 +1060,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                                                         });
                                                     } else {
                                                         // console.warn("update " + stu.id + " failed!");
-                                                        toastr.warn("Upload register error! Please go to advanced!",{timeOut:10000});
+                                                        toastr.warning("Upload register error! Please go to advanced!",{timeOut:10000});
                                                         if (cnt >= reg.length) {
                                                             toastr.success('Give back event "' + evt.eventName + '"');
                                                             updateEvents();
@@ -1040,43 +1072,51 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                                         }
                                     }else {
                                         toastr.error("Database error!",{timeOut:10000});
+                                        $scope.networkInProgress = false;
                                     }
                                 });
                             }else {
                                 toastr.error("Add students failed!",{timeOut:10000});
+                                $scope.networkInProgress = false;
                             }
                         });
                     }else {
                         toastr.error("Database error!",{timeOut:10000});
+                        $scope.networkInProgress = false;
                     }
                 });
             }else {
                 toastr.error("Give back event failed!",{timeOut:10000});
+                $scope.networkInProgress = false;
             }
         });
 
     }
 });
-app.controller('regCtrl', function ($scope, syncManager, $rootScope) {
+app.controller('regCtrl', function ($scope, syncManager, $rootScope, toastr) {
     $scope.students = [];
     $scope.q = '';
     $scope.pic = placeHolderPic;
     $scope.fn = 'First Name';
     $scope.ln = 'Last Name';
+    $scope.nn = 'Nickname';
     $scope.regRfid = undefined;
     $scope.selectedStudent = undefined;
+    $scope.networkInProgress = true;
     db.all("SELECT * FROM `StudentInfo`", function (err, rows) {
         rows.forEach(function (row) {
             $scope.students.push({
                 id: row.id,
                 firstName: row.firstName,
                 lastName: row.lastName,
+                nickName: row.nickName,
                 inTime: '',
                 outTime: '',
                 rfid: row.rfid,
                 dorm: row.dorm
             });
         });
+        $scope.networkInProgress = false;
     });
     $scope.searchFilter = function (student) {
         return student.lastName.substring(0, $scope.q.length).toLowerCase() === $scope.q.toLowerCase()
@@ -1084,10 +1124,11 @@ app.controller('regCtrl', function ($scope, syncManager, $rootScope) {
     };
 
     $scope.$on('card-attach', function (event, rfid) {
-        if ($scope.regRfid === undefined) {
+        if (!$scope.regRfid) {
             $scope.regRfid = rfid;
             $scope.$apply();
             $('input[name=qInput]').focus();
+            // toastr.info('Please register the owner of this card');
         }
     });
     $scope.selectItem = function (item) {
@@ -1097,17 +1138,20 @@ app.controller('regCtrl', function ($scope, syncManager, $rootScope) {
         return $scope.selectedStudent == item;
     };
     $scope.registerStudent = function () {
+        let stu = angular.copy($scope.selectedStudent);
         if ($rootScope.isLoggedIn)
-            doReg($scope.selectedStudent, $scope.regRfid, 0);
+            doReg(stu, $scope.regRfid, 0);
         else {
-            db.run("INSERT OR REPLACE INTO `StudentReg` ('id','rfid') VALUES (?,?)", [$scope.selectedStudent.id, $scope.regRfid.toUpperCase()], function (err) {
+            db.run("INSERT OR REPLACE INTO `StudentReg` ('id','rfid') VALUES (?,?)", [stu.id, $scope.regRfid.toUpperCase()], function (err) {
                 if (!err) {
-                    db.run("UPDATE `StudentInfo` SET `rfid` = ? WHERE `id` = ?", [$scope.regRfid.toUpperCase(), $scope.selectedStudent.id], function (err) {
+                    db.run("UPDATE `StudentInfo` SET `rfid` = ? WHERE `id` = ?", [$scope.regRfid.toUpperCase(), stu.id], function (err) {
                         if (!err) {
                             $scope.regRfid = undefined;
                             $scope.q = '';
-                            showStudent($scope.selectedStudent, false);
                             $scope.selectedStudent = undefined;
+                            toastr.success(stu.nickName + ' is registered!');
+                            showStudent(stu, false);
+                            $scope.networkInProgress = false;
                         }
                     });
                 }
@@ -1119,9 +1163,15 @@ app.controller('regCtrl', function ($scope, syncManager, $rootScope) {
     let showStudent = function (student, changed) {
         if (dispTimeout !== undefined)
             clearTimeout(dispTimeout);
-        $scope.pic = photoPath + '/' + student.id + '.jpg';
+        if (fs.existsSync(photoPath + '/' + student.id + '.jpg')){
+            $scope.pic = photoPath + '/' + student.id + '.jpg';
+        }else {
+            $scope.pic = 'http://wiki.bdtnrm.org.au/images/8/8d/Empty_profile.jpg';
+            toastr.error('Photo not found, please go to Advanced -> Download Photos');
+        }
         $scope.fn = student.firstName;
         $scope.ln = student.lastName;
+        $scope.nn = student.nickName;
         if (!changed)
             $scope.$apply();
         dispTimeout = setTimeout(function () {
@@ -1129,6 +1179,7 @@ app.controller('regCtrl', function ($scope, syncManager, $rootScope) {
             $scope.pic = placeHolderPic;
             $scope.fn = 'First Name';
             $scope.ln = 'Last Name';
+            $scope.nn = 'Nick Name';
             $scope.$apply();
         }, 5000);
     };
@@ -1147,7 +1198,9 @@ app.controller('regCtrl', function ($scope, syncManager, $rootScope) {
                                 $scope.regRfid = undefined;
                                 $scope.selectedStudent = undefined;
                                 $scope.q = '';
+                                toastr.success(s.nickName + ' is registered!');
                                 showStudent(s, false);
+                                $scope.networkInProgress = false;
                             });
                             break;
                         }
@@ -1155,7 +1208,8 @@ app.controller('regCtrl', function ($scope, syncManager, $rootScope) {
                 }
             });
         } else {
-            alert("upload register " + s.lastName + " " + s.firstName + " failed!");
+            toastr.error(s.nickName + " is not registered due to network error! Please try again!",{timeOut:10000});
+            $scope.networkInProgress = false;
         }
     };
 
