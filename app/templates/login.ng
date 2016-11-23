@@ -17,7 +17,9 @@
                         {{isLoggingIn?"Signing In":"Sign In"}}
                     </button>
                     <br>
-                    <a style="float:right;clear:both" href="#/home">Go Offline</a>
+                    <a href="#/home" class="btn btn-block btn-info">
+                        Go Offline
+                    </a>
                 </form>
             </div>
         </div>

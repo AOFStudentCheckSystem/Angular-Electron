@@ -56,6 +56,7 @@ a:hover{
     margin-left: auto;
     margin-right: auto;
 }
+
 @media screen and (max-width: 300px){
     .fa-icon{
         font-size: 7em;

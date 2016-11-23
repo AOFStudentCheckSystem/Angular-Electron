@@ -20,7 +20,7 @@
     </div>
     <div class="row">
         <div class="col-xs-12 col-md-6" style="margin-bottom:10px">
-            <button class="btn btn-danger btn-block" ng-disabled="selected == undefined || networkInProgress" ng-click="completeEvent()">Complete Event</button>
+            <button class="btn btn-danger btn-block" ng-disabled="selected == undefined || networkInProgress" ng-click="makeSureComplete()"><i class="fa fa-exclamation-triangle" ng-show="confirmingComplete"></i>{{confirmingComplete?" Click again to confirm complete":"Complete Event"}}</button>
         </div>
         <div class="col-xs-12 col-md-6" ng-show="!localEvent" style="margin-bottom:10px">
             <button class="btn btn-primary btn-block" ng-disabled="selected == undefined || networkInProgress" ng-click="checkOutEvent()">Checkout Event</button>
