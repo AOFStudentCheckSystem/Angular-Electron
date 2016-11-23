@@ -6,37 +6,7 @@ const eapp = electron.remote.app;
 const Devices = smartcard.Devices;
 const devices = new Devices();
 let currentDevices = [];
-let db = new sqlite3.Database('AOFCheckDB.db', function (error) {
-    if (error != null) console.warn("Failed to initialize database :" + error);
-    else {
-        db.exec(
-            "CREATE TABLE if not exists StudentInfo      " +
-            "(id     TEXT PRIMARY KEY UNIQUE NOT NULL," +
-            " firstName TEXT                            ," +
-            " lastName  TEXT                            ," +
-            " nickName  TEXT                            ," +
-            " rfid      TEXT                            ," +
-            " dorm      TEXT                           );" +
-            "CREATE TABLE if not exists StudentCheck     " +
-            "(id     TEXT                    NOT NULL," +
-            " eventId   TEXT                    NOT NULL," +
-            " inTime    TEXT                            ," +
-            " outTime   TEXT                            ," +
-            " PRIMARY KEY (id, eventId)             );" +
-            "CREATE TABLE if not exists StudentReg       " +
-            "(id     TEXT PRIMARY KEY UNIQUE NOT NULL," +
-            " rfid      TEXT                           );" +
-            "CREATE TABLE if not exists Events           " +
-            "(eventId   TEXT PRIMARY KEY UNIQUE NOT NULL," +
-            " eventName TEXT                            ," +
-            " eventTime TEXT                            ," +
-            " token     TEXT                            ," +
-            " status    TEXT                           ) ",
-            function (error) {
-                if (error != null) console.warn("Failed to create table: " + error);
-            });
-    }
-});
+let db;
 const photoPath = eapp.getPath('appData') + '/student-check-electron-angular/pics';
 ///Users/liupeiqi/Library/Application Support/student-check-electron-angular/pics
 const domain = "http://hn2.guardiantech.com.cn:10492/v2/";
@@ -451,8 +421,53 @@ app.controller("navbarCtrl", function ($rootScope, $scope, $http, session, $loca
         }
     };
 });
-app.controller('indexCtrl', function () {
-    window.location.href = "#/login";
+app.controller('indexCtrl', function ($rootScope) {
+    db = new sqlite3.Database('AOFCheckDB.db', function (error) {
+        if (error) console.warn("Failed to initialize database :" + error);
+        else {
+            db.exec(
+                "CREATE TABLE if not exists StudentInfo      " +
+                "(id     TEXT PRIMARY KEY UNIQUE NOT NULL," +
+                " firstName TEXT                            ," +
+                " lastName  TEXT                            ," +
+                " nickName  TEXT                            ," +
+                " rfid      TEXT                            ," +
+                " dorm      TEXT                           );" +
+                "CREATE TABLE if not exists StudentCheck     " +
+                "(id     TEXT                    NOT NULL," +
+                " eventId   TEXT                    NOT NULL," +
+                " inTime    TEXT                            ," +
+                " outTime   TEXT                            ," +
+                " PRIMARY KEY (id, eventId)             );" +
+                "CREATE TABLE if not exists StudentReg       " +
+                "(id     TEXT PRIMARY KEY UNIQUE NOT NULL," +
+                " rfid      TEXT                           );" +
+                "CREATE TABLE if not exists Events           " +
+                "(eventId   TEXT PRIMARY KEY UNIQUE NOT NULL," +
+                " eventName TEXT                            ," +
+                " eventTime TEXT                            ," +
+                " token     TEXT                            ," +
+                " status    TEXT                           ) ",
+                function (error) {
+                    if (error) console.warn("Failed to create table: " + error);
+                    else {
+                        $rootScope.localEvent = undefined;
+                        db.get('SELECT * FROM `EVENTS`',[],function (err, row) {
+                            if (row){
+                                $rootScope.localEvent = {
+                                    eventId : row.eventId,
+                                    eventName : row.eventName,
+                                    eventTime : row.eventTime,
+                                    token : row.token,
+                                    eventStatus : row.status
+                                };
+                            }
+                            window.location.href = "#/login";
+                        });
+                    }
+                });
+        }
+    });
 });
 app.controller('loginCtrl', function ($scope, $http, session, $rootScope, toastr) {
     $scope.isLoggingIn = false;
@@ -475,17 +490,19 @@ app.controller('loginCtrl', function ($scope, $http, session, $rootScope, toastr
 });
 app.controller('homeCtrl', function ($scope, $rootScope, toastr) {
     $scope.goCheckin = function () {
-        if ($rootScope.isLoggedIn) {
-            window.location.href = "#/event";
+        if (!$rootScope.localEvent) {
+            if ($rootScope.isLoggedIn)
+                window.location.href = "#/event";
+            else
+                toastr.info("Please log in and go to Events menu to check out an event!",{timeOut:10000});
         } else {
-            db.get("SELECT * FROM `EVENTS`", [], function (err, row) {
-                if (!row) {
-                    toastr.info("Please log in and go to Events menu to check out an event!",{timeOut:10000});
-                } else {
-                    toastr.info('You are checking in for event "' + row.eventName + '"');
-                    window.location.href = "#/checkin/" + row.eventId;
-                }
-            });
+            if
+            ($rootScope.isLoggedIn) toastr.info("Please go to Events menu to give back the local event!",{timeOut:10000});
+            else {
+                toastr.info('You are checking in for event "' + $rootScope.localEvent.eventName + '"');
+                window.location.href = "#/checkin/" + $rootScope.localEvent.eventId;
+            }
+
         }
     };
     $scope.goEvents = function () {
@@ -495,7 +512,11 @@ app.controller('homeCtrl', function ($scope, $rootScope, toastr) {
     };
     $scope.goReg = function () {
         if ($rootScope.isLoggedIn) {
-            window.location.href = "#/register";
+            if (!$rootScope.localEvent){
+                window.location.href = "#/register";
+            }else {
+                toastr.info("Please go to Events menu to give back the local event!",{timeOut:10000});
+            }
         }
     };
     $scope.goAdvanced = function () {
@@ -638,6 +659,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                 });
             }
         } else {
+            $scope.networkInProgress = false;
             showStudent(stu, false);
         }
     };
@@ -830,37 +852,40 @@ app.controller('advancedCtrl', function ($scope, syncManager) {
     $scope.downloadEventsInProgress = false;
     $scope.downloadPicsInProgress = false;
 });
-app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr) {
+app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $rootScope) {
     $scope.selected = undefined;
     $scope.events = [];
     $scope.eventName = '';
-    $scope.localEvent = undefined;
+    // $scope.localEvent = undefined;
     $scope.networkInProgress = true;
 
     let updateEvents = function () {
-        db.get("SELECT * FROM `Events`", [], function (err, row) {
-            if (row) {
-                $scope.localEvent = {
-                    eventId: row.eventId,
-                    eventName: row.eventName,
-                    eventTime: row.eventTime,
-                    eventStatus: row.status,
-                    token: row.token
-                };
-                toastr.info('You have a local event "'+ row.eventName + '"');
-            } else {
-                $scope.localEvent = undefined;
+        // db.get("SELECT * FROM `Events`", [], function (err, row) {
+        //     if (row) {
+        //         $scope.localEvent = {
+        //             eventId: row.eventId,
+        //             eventName: row.eventName,
+        //             eventTime: row.eventTime,
+        //             eventStatus: row.status,
+        //             token: row.token
+        //         };
+        //
+        //     } else {
+        //         $scope.localEvent = undefined;
+        //     }
+        //
+        // });
+        if ($rootScope.localEvent){
+            toastr.info('You have a local event "'+ $rootScope.localEvent.eventName + '"');
+        }
+        syncManager.downloadEvents(function (ret1) {
+            if (ret1 === null){
+                toastr.error('Failed to fetch event list!',{timeOut:10000});
+            }else {
+                $scope.events = ret1;
+                $scope.networkInProgress = false;
             }
-            syncManager.downloadEvents(function (ret1) {
-                if (ret1 === null){
-                    toastr.error('Failed to fetch event list!',{timeOut:10000});
-                }else {
-                    $scope.events = ret1;
-                    $scope.networkInProgress = false;
-                }
-            });
         });
-
     };
     updateEvents();
 
@@ -920,8 +945,10 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr) {
         let evt = angular.copy($scope.selected);
         syncManager.uploadCheckoutEvent(evt.eventId, function (ret) {
             if (ret) {
-                db.run("INSERT OR REPLACE INTO `Events` ('eventId','eventName','eventTime','token','status') VALUES (?,?,?,?,?)", [evt.eventId, evt.eventName, evt.eventTime, ret.returnKey, evt.eventStatus], function (err) {
+                evt.token = ret.returnKey;
+                db.run("INSERT OR REPLACE INTO `Events` ('eventId','eventName','eventTime','token','status') VALUES (?,?,?,?,?)", [evt.eventId, evt.eventName, evt.eventTime, evt.token, evt.eventStatus], function (err) {
                     if (!err) {
+                        $rootScope.localEvent = evt;
                         db.serialize(function () {
                             db.run("BEGIN TRANSACTION");
                             let stmt = db.prepare("INSERT OR REPLACE INTO `StudentCheck` ('id','eventId','inTime','outTime') VALUES (?,?,?,?)");
@@ -943,7 +970,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr) {
     };
     $scope.uploadEvent = function () {
         $scope.networkInProgress = true;
-        let evt = $scope.localEvent;
+        let evt = $rootScope.localEvent;
         let add = [];
         let reg = [];
         db.all("SELECT * FROM `StudentCheck` WHERE `eventId` = ?", [evt.id], function (err, rows) {
@@ -974,6 +1001,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr) {
             if (ret) {
                 db.run("DELETE FROM `Events` WHERE `eventId` = ?", [evt.eventId], function (err) {
                     if (!err) {
+                        $rootScope.localEvent = undefined;
                         syncManager.uploadAddStudent(add, evt.eventId, function (ret) {
                             // console.log("uploadAddStudent");
                             if (ret) {

@@ -5,7 +5,7 @@
             <div class="list-group-item-heading">
                 <div class="input-group">
                     <input type="text" class="form-control" ng-model="eventName" placeholder="event name"/>
-                    <span class="input-group-btn"><button class="btn btn-default" ng-disabled = "eventName === '' || !isLoggedIn" ng-click="addEvent()">Add New Event</button></span>
+                    <span class="input-group-btn"><button class="btn btn-default" ng-disabled = "eventName === '' || localEvent" ng-click="addEvent()">Add New Event</button></span>
                 </div>
             </div>
             <div class="list-group">
@@ -20,10 +20,10 @@
     </div>
     <div class="row">
         <div class="col-xs-12 col-md-6" style="margin-bottom:10px">
-            <button class="btn btn-danger btn-block" ng-disabled="selected == undefined || networkInProgress" ng-click="makeSureComplete()"><i class="fa fa-exclamation-triangle" ng-show="confirmingComplete"></i>{{confirmingComplete?" Click again to confirm complete":"Complete Event"}}</button>
+            <button class="btn btn-danger btn-block" ng-disabled="!selected || networkInProgress || localEvent" ng-click="makeSureComplete()"><i class="fa fa-exclamation-triangle" ng-show="confirmingComplete"></i>{{confirmingComplete?" Click again to confirm complete":"Complete Event"}}</button>
         </div>
         <div class="col-xs-12 col-md-6" ng-show="!localEvent" style="margin-bottom:10px">
-            <button class="btn btn-primary btn-block" ng-disabled="selected == undefined || networkInProgress" ng-click="checkOutEvent()">Checkout Event</button>
+            <button class="btn btn-primary btn-block" ng-disabled="!selected || networkInProgress || localEvent" ng-click="checkOutEvent()">Checkout Event</button>
         </div>
         <div class="col-xs-12 col-md-6" ng-show="localEvent" style="margin-bottom:10px">
             <button class="btn btn-success btn-block" ng-disabled="networkInProgress" ng-click="uploadEvent()">Upload Event "{{localEvent.eventName}}"</button>
