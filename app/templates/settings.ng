@@ -27,6 +27,16 @@
             <div class="panel panel-default">
                 <div class="panel-body text-left">
                     <h1>Take effect after restart</h1>
+                    <div class="checkbox" style="margin-top: 3vh; height: 30px; font-size: larger">
+                        <label>
+                            <input type="checkbox" bs-switch ng-model="hideRepeat" switch-change="hideRepeatChange()">  &nbsp;Hide repeat messages
+                        </label>
+                    </div>
+                    <div class="checkbox" style="margin-top: 3vh; height: 30px; font-size: larger">
+                        <label>
+                            <input type="checkbox" bs-switch ng-model="progressBar" switch-change="progressBarChange()">  &nbsp;Show progress bar
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>

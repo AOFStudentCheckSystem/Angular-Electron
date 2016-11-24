@@ -6,7 +6,8 @@
                 <div style="max-height: 70vh; overflow-y: scroll">
                 <a class="list-group-item" ng-repeat="event in events | filter:activeFilter" ng-click="selectItem(event)" ng-class="{active: isActive(event)}">
                     <h4 class="list-group-item-heading">{{event.eventName}}</h4>
-                    <p class="list-group-item-text"></p>
+                    <span class="list-group-item-text">{{event.eventStatus==0?"Planning":(event.eventStatus==1?"Boarding":"Completed")}}</span>
+                    <span class="list-group-item-text" style="float: right">{{event.eventTime*1000 | date:'yyyy-MM-dd HH:mm:ss'}}</span>
                 </a>
                 </div>
             </div>

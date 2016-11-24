@@ -42,7 +42,7 @@ let standardize = function (s) {
 // };
 let settings = ['show-add-student','show-rm-student','show-reg-student','hide-repeat','progress-bar'];
 
-let app = angular.module("studentCheck", ['ngRoute', 'routeStyles','ngAnimate', 'toastr','frapontillo.bootstrap-switch'], function ($httpProvider) {
+let app = angular.module("studentCheck", ['ngRoute', 'routeStyles','ngAnimate', 'toastr','frapontillo.bootstrap-switch','ui.bootstrap','ui.bootstrap.datetimepicker'], function ($httpProvider) {
     $httpProvider.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8';
     let param = function (obj) {
         let query = '', name, value, fullSubName, subName, subValue, innerObj, i;
@@ -279,8 +279,8 @@ app.factory('syncManager', function ($http, toastr, session, $rootScope) {
                 if (checkErr(err)) callback(false);
             });
         },
-        uploadAddEvent: function (eventName, callback) {
-            $http.post(domain + 'api/event/add', {eventName: eventName}).then(function (suc) {
+        uploadAddEvent: function (eventName, eventTime, callback) {
+            $http.post(domain + 'api/event/add', {eventName: eventName, eventTime: eventTime}).then(function (suc) {
                 callback(suc.data);
             }, function (err) {
                 if (checkErr(err)) callback(null);
@@ -341,11 +341,11 @@ app.factory('syncManager', function ($http, toastr, session, $rootScope) {
     };
 });
 app.factory('LS', function ($window, $rootScope) {
-    angular.element($window).on('storage', function(event) {
-        if (settings.indexOf(event.key) > -1){
-            $rootScope.$apply();
-        }
-    });
+    // angular.element($window).on('storage', function(event) {
+    //     if (settings.indexOf(event.key) > -1){
+    //         $rootScope.$apply();
+    //     }
+    // });
     return {
         set: function(key, val) {
             $window.localStorage.setItem(key, val);
@@ -414,9 +414,9 @@ app.config(function(toastrConfig) {
         maxOpened: 0,
         newestOnTop: false,
         positionClass: 'toast-bottom-right',
-        progressBar: window.localStorage.getItem('progress-bar'),
+        progressBar: window.localStorage.getItem('progress-bar') == 'true',
         timeOut: 5000,
-        preventOpenDuplicates: window.localStorage.getItem('hide-repeat')
+        preventOpenDuplicates: window.localStorage.getItem('hide-repeat') == 'true'
     });
 });
 
@@ -550,6 +550,8 @@ app.controller('indexCtrl', function ($rootScope) {
     }
 });
 app.controller('loginCtrl', function ($scope, $http, session, $rootScope, toastr) {
+    $scope.username = 'admin';
+    $scope.password = '12345';
     $scope.isLoggingIn = false;
     $scope.login = function () {
         $scope.isLoggingIn = true;
@@ -639,6 +641,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     $scope.students = [];
     $scope.eventName = $routeParams.eventName;
     let eventId = $routeParams.eventId;
+
     db.all("SELECT * FROM `StudentInfo`", function (err, rows) {
         if (!rows){
             toastr.error('Database is empty! Please go to Advanced -> Download Students',{timeOut:10000});
@@ -658,21 +661,8 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
         }
 
         if ($rootScope.isLoggedIn) {
-            syncManager.downloadEventStudents(eventId, function (ret) {
-                if (ret != null) {
-                    for (let i = 0; i < ret.length; i++) {
-                        for (let k = 0; k < $scope.students.length; k++) {
-                            if ($scope.students[k].id === ret[i].studentId) {
-                                $scope.students[k].inTime = standardize(ret[i].checkinTime);
-                                $scope.students[k].outTime = standardize(ret[i].checkoutTime);
-                                // console.log("id:" + $scope.students[k].id + " in:" + $scope.students[k].inTime + " out:" + $scope.students[k].outTime);
-                                break;
-                            }
-                        }
-                    }
-                }
-            });
-            //TODO:loading
+            updateEventStudents();
+            setInterval(function(){updateEventStudents()},5000);
         }
         else {
             db.all("SELECT * FROM `StudentCheck` WHERE `eventId` = ?", [eventId], function (err, rows) {
@@ -689,8 +679,44 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                 $scope.$apply();
             });
         }
-
     });
+
+    let updateEventStudents = function () {
+        //TODO:loading
+        console.log('Students updated');
+        syncManager.downloadEventStudents(eventId, function (ret) {
+            if (ret != null) {
+                // for (let i = 0; i < ret.length; i++) {
+                //     for (let k = 0; k < $scope.students.length; k++) {
+                //         if ($scope.students[k].id === ret[i].studentId) {
+                //             $scope.students[k].inTime = standardize(ret[i].checkinTime);
+                //             $scope.students[k].outTime = standardize(ret[i].checkoutTime);
+                //             break;
+                //         }
+                //     }
+                // }
+                for (let k = 0; k < $scope.students.length; k++){
+                    let found = false;
+                    for (let i = 0; i < ret.length; i++) {
+                        if ($scope.students[k].id === ret[i].studentId) {
+                            $scope.students[k].inTime = standardize(ret[i].checkinTime);
+                            $scope.students[k].outTime = standardize(ret[i].checkoutTime);
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found){
+                        $scope.students[k].inTime = '';
+                        $scope.students[k].outTime = '';
+                    }
+                }
+            }
+        });
+    };
+    $scope.manualUpdate = function () {
+        updateEventStudents();
+    };
+
     $scope.q = '';
     $scope.pic = placeHolderPic;
     $scope.fn = 'First Name';
@@ -945,8 +971,17 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
     $scope.selected = undefined;
     $scope.events = [];
     $scope.eventName = '';
-    // $scope.localEvent = undefined;
     $scope.networkInProgress = true;
+    $scope.selectedDate = new Date();
+
+    $scope.openDate = function(){
+        $scope.dateOpened = true;
+    };
+
+    $scope.onTimeSet = function (newDate, oldDate) {
+        $scope.dateOpened = false;
+        $scope.selectedDate = newDate;
+    };
 
     let updateEvents = function () {
         // db.get("SELECT * FROM `Events`", [], function (err, row) {
@@ -991,7 +1026,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
     $scope.addEvent = function () {
         $scope.networkInProgress = true;
         let n = angular.copy($scope.eventName);
-        syncManager.uploadAddEvent(n, function (ret) {
+        syncManager.uploadAddEvent(n, new Date($scope.selectedDate).getTime(), function (ret) {
             if (ret !== null) {
                 toastr.success('Event "' + n + '" added!');
                 updateEvents();
@@ -1030,6 +1065,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                 toastr.error('Failed to completed event "' + evt.eventName + '" !');
                 $scope.networkInProgress = false;
             }
+            $scope.selected = undefined;
         });
         // }
     };
@@ -1106,6 +1142,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                                             toastr.success('Give back event "' + evt.eventName + '"');
                                             updateEvents();
                                             $scope.networkInProgress = false;
+                                            $scope.selected = undefined;
                                         } else {
                                             let cnt = 0;
                                             reg.forEach(function (stu) {
@@ -1118,6 +1155,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                                                                 toastr.success('Give back event "' + evt.eventName + '"');
                                                                 updateEvents();
                                                                 $scope.networkInProgress = false;
+                                                                $scope.selected = undefined;
                                                             }
                                                         });
                                                     } else {
@@ -1127,6 +1165,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                                                             toastr.success('Give back event "' + evt.eventName + '"');
                                                             updateEvents();
                                                             $scope.networkInProgress = false;
+                                                            $scope.selected = undefined;
                                                         }
                                                     }
                                                 });
@@ -1135,24 +1174,27 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                                     }else {
                                         toastr.error("Database error!",{timeOut:10000});
                                         $scope.networkInProgress = false;
+                                        $scope.selected = undefined;
                                     }
                                 });
                             }else {
                                 toastr.error("Add students failed!",{timeOut:10000});
                                 $scope.networkInProgress = false;
+                                $scope.selected = undefined;
                             }
                         });
                     }else {
                         toastr.error("Database error!",{timeOut:10000});
                         $scope.networkInProgress = false;
+                        $scope.selected = undefined;
                     }
                 });
             }else {
                 toastr.error("Give back event failed!",{timeOut:10000});
                 $scope.networkInProgress = false;
+                $scope.selected = undefined;
             }
         });
-
     }
 });
 app.controller('regCtrl', function ($scope, syncManager, $rootScope, toastr) {
@@ -1277,10 +1319,11 @@ app.controller('regCtrl', function ($scope, syncManager, $rootScope, toastr) {
 
 });
 app.controller('settingsCtrl', function ($scope, $window, LS) {
-
     $scope.showAddStudent = LS.get('show-add-student',true) == "true";
     $scope.showRmStudent = LS.get('show-rm-student',true) == "true";
     $scope.showRegStudent = LS.get('show-reg-student',true) == "true";
+    $scope.hideRepeat = LS.get('hide-repeat',false) == "true";
+    $scope.progressBar = LS.get('progress-bar',true) == "true";
     $scope.addStudentChange = function(){
         LS.set('show-add-student',$scope.showAddStudent);
     };
@@ -1289,5 +1332,11 @@ app.controller('settingsCtrl', function ($scope, $window, LS) {
     };
     $scope.regStudentChange = function(){
         LS.set('show-reg-student',$scope.showRegStudent);
+    };
+    $scope.hideRepeatChange = function(){
+        LS.set('hide-repeat',$scope.hideRepeat);
+    };
+    $scope.progressBarChange = function(){
+        LS.set('progress-bar',$scope.progressBar);
     };
 });

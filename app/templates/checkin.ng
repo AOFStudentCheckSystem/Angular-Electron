@@ -15,12 +15,6 @@
             <h2>Count: {{getCheckinLen()}}</h2>
         </div>
         <div class="col-xs-6">
-            <!--<div class="input-group" style="margin-bottom: 10px;">-->
-            <!--<input type="text" class="form-control"/>-->
-            <!--<span class="input-group-btn">-->
-            <!--<button class="btn btn-default">Yoo</button>-->
-            <!--</span>-->
-            <!--</div>-->
             <div class="list-group-item-heading">
                 <input type="text" name="qInput" class="form-control" ng-model="q" placeholder="search by last name" autofocus/>
             </div>
@@ -35,6 +29,7 @@
                     </div>
                 </a>
             </div>
+            <button class="btn btn-primary btn-lg" ng-click="manualUpdate()">Manually update</button>
         </div>
     </div>
 </div>
