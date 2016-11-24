@@ -21,7 +21,28 @@ let standardize = function (s) {
     return !s || s.toUpperCase() == 'NULL' ? '' : s;
 };
 
-let app = angular.module("studentCheck", ['ngRoute', 'routeStyles','ngAnimate', 'toastr'], function ($httpProvider) {
+// let pref = {
+//     /**
+//      * Initialize the local pref, return value after init
+//      * @param key self-explanatory
+//      * @param moren default value for this key is value DNE
+//      */
+//     init:function (key, moren) {
+//         if (window.localStorage.getItem(key) === null){
+//             window.localStorage.setItem(key,moren);
+//         }
+//         return window.localStorage.getItem(key);
+//     },
+//     set: function (key, val) {
+//         window.localStorage.setItem(key,val);
+//     },
+//     get: function (key) {
+//         return window.localStorage.getItem(key);
+//     }
+// };
+let settings = ['show-add-student','show-rm-student','show-reg-student','hide-repeat','progress-bar'];
+
+let app = angular.module("studentCheck", ['ngRoute', 'routeStyles','ngAnimate', 'toastr','frapontillo.bootstrap-switch'], function ($httpProvider) {
     $httpProvider.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8';
     let param = function (obj) {
         let query = '', name, value, fullSubName, subName, subValue, innerObj, i;
@@ -59,7 +80,7 @@ let app = angular.module("studentCheck", ['ngRoute', 'routeStyles','ngAnimate', 
     }];
 });
 
-app.run(function ($rootScope, toastr) {
+app.run(function ($rootScope) {
     smartcard = require('smartcard');
     Devices = smartcard.Devices;
     devices = new Devices();
@@ -319,6 +340,25 @@ app.factory('syncManager', function ($http, toastr, session, $rootScope) {
         }
     };
 });
+app.factory('LS', function ($window, $rootScope) {
+    angular.element($window).on('storage', function(event) {
+        if (settings.indexOf(event.key) > -1){
+            $rootScope.$apply();
+        }
+    });
+    return {
+        set: function(key, val) {
+            $window.localStorage.setItem(key, val);
+            return this;
+        },
+        get: function(key, defaul) {
+            if (defaul !== null && defaul !== undefined && $window.localStorage.getItem(key) === null){
+                $window.localStorage.setItem(defaul);
+            }
+            return $window.localStorage.getItem(key);
+        }
+    };
+});
 
 app.config(['$httpProvider', function ($httpProvider) {
     $httpProvider.interceptors.push('httpInterceptor');
@@ -353,19 +393,30 @@ app.config(function ($routeProvider) {
             templateUrl: 'templates/register.ng',
             controller: 'regCtrl'
         })
+        .when("/settings", {
+            templateUrl: 'templates/settings.ng',
+            controller: 'settingsCtrl'
+        })
         .otherwise({
             templateUrl: 'templates/index.ng',
             controller: 'indexCtrl'
         });
 });
 app.config(function(toastrConfig) {
+    if (window.localStorage.getItem('progress-bar')===null){
+        window.localStorage.setItem('progress-bar',true);
+    }
+    if (window.localStorage.getItem('hide-repeat')===null){
+        window.localStorage.setItem('hide-repeat',false);
+    }
     angular.extend(toastrConfig, {
         autoDismiss: false,
         maxOpened: 0,
         newestOnTop: false,
         positionClass: 'toast-bottom-right',
-        progressBar: true,
-        timeOut: 5000
+        progressBar: window.localStorage.getItem('progress-bar'),
+        timeOut: 5000,
+        preventOpenDuplicates: window.localStorage.getItem('hide-repeat')
     });
 });
 
@@ -425,6 +476,8 @@ app.controller("navbarCtrl", function ($rootScope, $scope, $http, session, $loca
             case '/register':
                 url = '/home';
                 break;
+            case '/settings':
+                url = '/home';
         }
         return url;
     };
@@ -486,6 +539,15 @@ app.controller('indexCtrl', function ($rootScope) {
                 });
         }
     });
+    if (window.localStorage.getItem('show-add-student')===null){
+        window.localStorage.setItem('show-add-student',true);
+    }
+    if (window.localStorage.getItem('show-rm-student')===null){
+        window.localStorage.setItem('show-rm-student',true);
+    }
+    if (window.localStorage.getItem('show-reg-student')===null){
+        window.localStorage.setItem('show-reg-student',true);
+    }
 });
 app.controller('loginCtrl', function ($scope, $http, session, $rootScope, toastr) {
     $scope.isLoggingIn = false;
@@ -573,7 +635,7 @@ app.controller('eventCtrl', function ($scope, $http, syncManager, toastr) {
         return event.eventStatus != 2;
     };
 });
-app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManager, $rootScope, toastr) {
+app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManager, $rootScope, toastr, LS) {
     $scope.students = [];
     $scope.eventName = $routeParams.eventName;
     let eventId = $routeParams.eventId;
@@ -672,7 +734,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                         stu.inTime = time;
                         $scope.q = '';
                         $scope.networkInProgress = false;
-                        toastr.success(stu.nickName + " is checked in!");
+                        if(LS.get('show-add-student')=='true')toastr.success(stu.nickName + " is checked in!");
                         showStudent(stu, false);
                     }
                 });
@@ -695,7 +757,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                             $scope.networkInProgress = false;
                             $scope.q = '';
                             showStudent(s, true);
-                            toastr.success(s.nickName + " is checked in!");
+                            if(LS.get('show-add-student')=='true')toastr.success(s.nickName + " is checked in!");
                             break;
                         }
                     }
@@ -743,7 +805,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                     console.log(stu + " removed");
                     $scope.q = '';
                     $scope.networkInProgress = false;
-                    toastr.success(stu.nickName + " is removed!");
+                    if(LS.get('show-rm-student')=='true')toastr.success(stu.nickName + " is removed!");
                     showStudent(stu, false);
                 }
             });
@@ -762,7 +824,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                             $scope.networkInProgress = false;
                             console.log($scope.students[i].firstName + " removed");
                             $scope.q = '';
-                            toastr.success(s.nickName + " is removed!");
+                            if(LS.get('show-rm-student')=='true')toastr.success(s.nickName + " is removed!");
                             showStudent($scope.students[i], true);
                             break;
                         }
@@ -786,7 +848,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                 db.run("UPDATE `StudentInfo` SET `rfid` = ? WHERE `id` = ?", [rfid.toUpperCase(), stu.id]);
                 $scope.registerRFID = undefined;
                 stu.rfid = rfid;
-                toastr.success(stu.nickName + " is registered!");
+                if(LS.get('show-reg-student')=='true')toastr.success(stu.nickName + " is registered!");
             });
         }
 
@@ -802,7 +864,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                         if (s.id == $scope.students[i].id) {
                             $scope.registerRFID = undefined;
                             $scope.students[i].rfid = s.rfid;
-                            toastr.success(s.nickName + " is registered!");
+                            if(LS.get('show-reg-student')=='true')toastr.success(s.nickName + " is registered!");
                             break;
                         }
                     }
@@ -1213,4 +1275,19 @@ app.controller('regCtrl', function ($scope, syncManager, $rootScope, toastr) {
         }
     };
 
+});
+app.controller('settingsCtrl', function ($scope, $window, LS) {
+
+    $scope.showAddStudent = LS.get('show-add-student',true) == "true";
+    $scope.showRmStudent = LS.get('show-rm-student',true) == "true";
+    $scope.showRegStudent = LS.get('show-reg-student',true) == "true";
+    $scope.addStudentChange = function(){
+        LS.set('show-add-student',$scope.showAddStudent);
+    };
+    $scope.rmStudentChange = function(){
+        LS.set('show-rm-student',$scope.showRmStudent);
+    };
+    $scope.regStudentChange = function(){
+        LS.set('show-reg-student',$scope.showRegStudent);
+    };
 });
