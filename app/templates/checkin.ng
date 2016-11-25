@@ -1,0 +1,36 @@
+<div class="container">
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="panel panel-default" style="max-height: 60px;">
+                <div class="panel-body text-center">
+                    <h2 style="margin-top: 0">{{registerRFID?'Please register this card':eventName}}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-xs-6 text-right" ng-show = "!registerRFID">
+            <img ng-src="{{pic}}" alt="No photo available, try download the photos again." style="width: 300px; height: 450px"/>
+            <h2>{{nn}}</h2>
+            <h2>{{fn}}</h2>
+            <h2>{{ln}}</h2>
+            <h2>Count: {{getCheckinLen()}}</h2>
+        </div>
+        <div class="col-xs-6">
+            <div class="list-group-item-heading">
+                <input type="text" name="qInput" class="form-control" ng-model="q" placeholder="search by last name" autofocus/>
+            </div>
+            <div class="list-group" style="overflow-y: scroll; max-height: 80vh;">
+                <a class="list-group-item" ng-repeat="student in students | filter:searchFilter">
+                    <h4 class="list-group-item-heading">{{student.lastName}}, {{student.firstName}}</h4>
+                    <div class="list-group-item-text">
+                        <div class="pull-right" style="margin-top: -25px;">
+                            <button class="btn btn-sm btn-danger" ng-class="{'hidden':!isCheckedIn(student)}" ng-click="deleteStudent(student)" ng-disabled="networkInProgress">Remove</button>
+                            <button class="btn btn-sm btn-primary" ng-class="{'hidden':isCheckedIn(student)}" ng-click="checkinStudent(student)" ng-disabled="networkInProgress">{{registerRFID===undefined?"":"Register & "}}Add</button>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <button class="btn btn-primary btn-lg" ng-click="manualUpdate()">Manually update</button>
+        </div>
+    </div>
+</div>
+</div>

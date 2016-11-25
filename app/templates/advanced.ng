@@ -1,0 +1,64 @@
+<div class="container">
+    <div class="row">
+        <div class="col-xs-12 col-sm-6 col-md-4">
+            <a ng-click="downloadStudentInfo()" style="cursor: pointer" ng-class="{'disabled-panel':downloadStudentInfoInProgress}">
+                <div class="panel panel-default">
+                    <div class="panel-body text-center">
+                        <h1>Download Students</h1>
+                        <h4>Last Sync: whatever</h4>
+                        <i class="fa fa-refresh" ng-class="{'fa-spin' : downloadStudentInfoInProgress}" style="font-size: 10vmin"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <!--<div class="col-xs-12 col-sm-6 col-md-4">-->
+            <!--<a ng-click="downloadEvents()" style="cursor: pointer" ng-class="{'disabled-panel':downloadEventsInProgress}">-->
+                <!--<div class="panel panel-default">-->
+                    <!--<div class="panel-body text-center">-->
+                        <!--<h1>Download Events</h1>-->
+                        <!--<h4>Last Sync: whatever</h4>-->
+                        <!--<i class="fa fa-refresh" ng-class="{'fa-spin' : downloadEventsInProgress}" style="font-size: 10vmin"></i>-->
+                    <!--</div>-->
+                <!--</div>-->
+            <!--</a>-->
+        <!--</div>-->
+        <div class="col-xs-12 col-sm-6 col-md-4">
+            <a ng-click="uploadRegister()" style="cursor: pointer" ng-class="{'disabled-panel':uploadRegisterInProgress}">
+                <div class="panel panel-default">
+                    <div class="panel-body text-center">
+                        <h1>Upload Register</h1>
+                        <h4>Last Sync: whatever</h4>
+                        <i class="fa fa-refresh" ng-class="{'fa-spin' : uploadRegisterInProgress}" style="font-size: 10vmin"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-4">
+            <a ng-click="downloadPics()" style="cursor: pointer" ng-class="{'disabled-panel':downloadPicsInProgress}">
+                <div class="panel panel-default">
+                    <div class="panel-body text-center">
+                        <h1>Download Photos</h1>
+                        <h4>Last Sync: whatever</h4>
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" ng-style="{'width': value*100/maxv + '%', 'min-width': '2em'}" ng-class="{'active':downloadPicsInProgress}">
+                                {{(value*100/maxv | number:0) + '%'}}
+                            </div>
+                        </div>
+                        <!--<i class="fa fa-refresh" ng-class="{'fa-spin' : downloadPicsInProgress}" style="font-size: 10vmin"></i>-->
+                        <!--<h4>{{value}}/{{maxv}}</h4>-->
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-4">
+            <a ng-click="removePics()" style="cursor: pointer">
+                <div class="panel panel-default">
+                    <div class="panel-body text-center">
+                        <h1>Remove Photos</h1>
+                        <h4>whatever</h4>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>

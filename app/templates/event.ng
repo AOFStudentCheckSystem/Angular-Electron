@@ -1,0 +1,24 @@
+<div class="container" style="max-width: 700px;">
+    <div class="row">
+        <div class="col-xs-12">
+            <!--<h1>{{selected}}</h1>-->
+            <div class="list-group">
+                <div style="max-height: 70vh; overflow-y: scroll">
+                <a class="list-group-item" ng-repeat="event in events | filter:activeFilter" ng-click="selectItem(event)" ng-class="{active: isActive(event)}">
+                    <h4 class="list-group-item-heading">{{event.eventName}}</h4>
+                    <span class="list-group-item-text">{{event.eventStatus==0?"Planning":(event.eventStatus==1?"Boarding":"Completed")}}</span>
+                    <span class="list-group-item-text" style="float: right">{{event.eventTime*1000 | date:'yyyy-MM-dd HH:mm:ss'}}</span>
+                </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <!--<div class="col-xs-12 col-sm-6" style="margin-bottom:10px">-->
+            <!--<button class="btn btn-danger btn-block">Complete Event</button>-->
+        <!--</div>-->
+        <div class="col-xs-12">
+            <button class="btn btn-primary btn-block" ng-click="continueEvent()" ng-disabled="selected === undefined">Continue</button>
+        </div>
+    </div>
+</div>

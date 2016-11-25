@@ -1,0 +1,38 @@
+<div class="container">
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="panel panel-default" style="max-height: 60px;">
+                <div class="panel-body text-center">
+                    <h2 style="margin-top: 0">{{regRfid?"Please select and register the student":"Please scan the student card"}}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-xs-6 text-right">
+            <img ng-src="{{pic}}" alt="No photo available, try download the photos again." style="width: 300px; height: 450px"/>
+            <h2>{{nn}}</h2>
+            <h2>{{fn}}</h2>
+            <h2>{{ln}}</h2>
+        </div>
+        <div class="col-xs-6">
+            <div>
+                <div class="list-group-item-heading">
+                    <div class="input-group" >
+                        <input type="text" name="qInput" class="form-control" ng-model="q" placeholder="search by last name or ID" ng-disabled="!regRfid"/>
+                        <span class="input-group-btn"><button class="btn btn-default" ng-disabled="!selectedStudent || networkInProgress" ng-click="registerStudent()">Register</button></span>
+                    </div>
+                </div>
+                <div class="list-group" style="overflow-y: scroll; max-height: 85vh;" ng-hide="!regRfid">
+                    <a class="list-group-item" ng-repeat="student in students | filter:searchFilter" ng-click="selectItem(student)" ng-class="{active: isActive(student)}">
+                        <h4 class="list-group-item-heading">{{student.lastName}}, {{student.firstName}}</h4>
+                        <!--<div class="list-group-item-text">-->
+                        <!--<div class="pull-right" style="margin-top: -25px;">-->
+                        <!--<button class="btn btn-sm btn-danger" ng-class="{'hidden':!isCheckedIn(student)}" ng-click="deleteStudent(student)">Remove</button>-->
+                        <!--<button class="btn btn-sm btn-primary" ng-class="{'hidden':isCheckedIn(student)}" ng-click="checkinStudent(student)">{{registerRFID===undefined?"":"Register & "}}Add</button>-->
+                        <!--</div>-->
+                        <!--</div>-->
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

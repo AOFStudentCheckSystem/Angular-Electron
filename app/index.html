@@ -2,28 +2,42 @@
 <head>
     <link href="../libs/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="../libs/font-awesome/css/font-awesome.min.css" rel="stylesheet"/>
+    <link href="../libs/angular-toastr/dist/angular-toastr.min.css" rel="stylesheet"/>
+    <link href="../libs/bootstrap-switch/dist/css/bootstrap3/bootstrap-switch.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="../node_modules/angular-bootstrap-datetimepicker/src/css/datetimepicker.css"/>
+    <link href="app.css" rel="stylesheet"/>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Student Check</title>
 </head>
-<ng-include src="'components/navbar.ng'"></ng-include>
 <style>
-    @media screen and (max-width: 768px) {
-        .content{
-            margin-top: 130px;
-        }
+    .mainView {
+        margin-top: 70px;
     }
-    @media screen and (min-width: 768px) {
-        .content{
-            margin-top: 70px;
+
+    @media (max-width: 768px) {
+        .mainView {
+            margin-top: 140px;
         }
     }
 </style>
-<div class="content">
+<ng-include src="'components/navbar.ng'"></ng-include>
+<div class="mainView">
     <ng-view></ng-view>
 </div>
-<script src="../libs/angular/angular.min.js"></script>
+<script>window.$ = window.jQuery = require('jquery');</script>
+<script src="../libs/bootstrap/dist/js/bootstrap.js"></script>
+<script src="../libs/angular/angular.js"></script>
+<script src="../node_modules/moment/moment.js"></script>
 <script src="../libs/angular-route/angular-route.min.js"></script>
 <script src="../libs/angular-route-styles/route-styles.js"></script>
+<script src="../libs/angular-animate/angular-animate.js"></script>
+<script src="../libs/angular-toastr/dist/angular-toastr.tpls.js"></script>
+<script src="../libs/bootstrap-switch/dist/js/bootstrap-switch.js"></script>
+<script src="../libs/angular-bootstrap-switch/dist/angular-bootstrap-switch.js"></script>
+<script src="../libs/angular-bootstrap/ui-bootstrap-tpls.js"></script>
+<script src="../node_modules/angular-bootstrap-datetimepicker/src/js/datetimepicker.js"></script>
+<script src="../node_modules/angular-bootstrap-datetimepicker/src/js/datetimepicker.templates.js"></script>
 <script src="md5.js"></script>
 <script src="app.js"></script>
 </html>

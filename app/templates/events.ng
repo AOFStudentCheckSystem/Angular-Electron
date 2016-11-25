@@ -1,0 +1,41 @@
+<div class="container" style="max-width: 700px;">
+    <div class="row">
+        <div class="col-xs-12">
+            <!--<h1>{{selected}}</h1>-->
+            <div class="list-group-item-heading">
+                <div class="input-group">
+                    <div class="input-group-addon">Name</div>
+                    <input type="text" class="form-control" ng-model="eventName"/>
+                    <div uib-dropdown class="input-group-addon" ng-click="openDate()" is-open="dateOpened" uib-dropdown-toggle>
+                        <i class="fa fa-calendar"></i>
+                        <ul class="dropdown-menu" uib-dropdown-menu>
+                            <li><datetimepicker data-ng-model="date" data-on-set-time="onTimeSet(newDate, oldDate)"></datetimepicker></li>
+                        </ul>
+                    </div>
+                    <input type="datetime" class="form-control" ng-value="selectedDate | date:'yyyy-MM-dd HH:mm:ss'" readonly/>
+                    <span class="input-group-btn"><button class="btn btn-default" ng-disabled = "!eventName || !selectedDate || localEvent" ng-click="addEvent()">Add New Event</button></span>
+                </div>
+            </div>
+            <div class="list-group">
+                <div style="max-height: 70vh; overflow-y: scroll">
+                    <a class="list-group-item" ng-repeat="event in events | filter:activeFilter" ng-click="selectItem(event)" ng-class="{active: isActive(event)}">
+                        <h4 class="list-group-item-heading">{{event.eventName}}</h4>
+                        <span class="list-group-item-text">{{event.eventStatus==0?"Planning":(event.eventStatus==1?"Boarding":"Completed")}}</span>
+                        <span class="list-group-item-text" style="float: right">{{event.eventTime*1000 | date:'yyyy-MM-dd HH:mm:ss'}}</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12 col-md-6" style="margin-bottom:10px">
+            <button class="btn btn-danger btn-block" ng-disabled="!selected || networkInProgress || localEvent" ng-click="makeSureComplete()"><i class="fa fa-exclamation-triangle" ng-show="confirmingComplete"></i>{{confirmingComplete?" Click again to confirm complete":"Complete Event"}}</button>
+        </div>
+        <div class="col-xs-12 col-md-6" ng-show="!localEvent" style="margin-bottom:10px">
+            <button class="btn btn-primary btn-block" ng-disabled="!selected || networkInProgress || localEvent" ng-click="checkOutEvent()">Checkout Event</button>
+        </div>
+        <div class="col-xs-12 col-md-6" ng-show="localEvent" style="margin-bottom:10px">
+            <button class="btn btn-success btn-block" ng-disabled="networkInProgress" ng-click="uploadEvent()">Upload Event "{{localEvent.eventName}}"</button>
+        </div>
+    </div>
+</div>
