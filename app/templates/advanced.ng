@@ -11,13 +11,24 @@
                 </div>
             </a>
         </div>
-        <div class="col-xs-12 col-sm-6 col-md-4" ng-hide>
-            <a ng-click="downloadEvents()" style="cursor: pointer" ng-class="{'disabled-panel':downloadEventsInProgress}">
+        <!--<div class="col-xs-12 col-sm-6 col-md-4">-->
+            <!--<a ng-click="downloadEvents()" style="cursor: pointer" ng-class="{'disabled-panel':downloadEventsInProgress}">-->
+                <!--<div class="panel panel-default">-->
+                    <!--<div class="panel-body text-center">-->
+                        <!--<h1>Download Events</h1>-->
+                        <!--<h4>Last Sync: whatever</h4>-->
+                        <!--<i class="fa fa-refresh" ng-class="{'fa-spin' : downloadEventsInProgress}" style="font-size: 10vmin"></i>-->
+                    <!--</div>-->
+                <!--</div>-->
+            <!--</a>-->
+        <!--</div>-->
+        <div class="col-xs-12 col-sm-6 col-md-4">
+            <a ng-click="uploadRegister()" style="cursor: pointer" ng-class="{'disabled-panel':uploadRegisterInProgress}">
                 <div class="panel panel-default">
                     <div class="panel-body text-center">
-                        <h1>Download Events</h1>
+                        <h1>Upload Register</h1>
                         <h4>Last Sync: whatever</h4>
-                        <i class="fa fa-refresh" ng-class="{'fa-spin' : downloadEventsInProgress}" style="font-size: 10vmin"></i>
+                        <i class="fa fa-refresh" ng-class="{'fa-spin' : uploadRegisterInProgress}" style="font-size: 10vmin"></i>
                     </div>
                 </div>
             </a>

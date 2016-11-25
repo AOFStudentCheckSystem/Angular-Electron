@@ -41,7 +41,7 @@ let standardize = function (s) {
 //     }
 // };
 let settings = ['show-add-student','show-rm-student','show-reg-student','hide-repeat','progress-bar'];
-
+let needDownloadDB = false;
 let app = angular.module("studentCheck", ['ngRoute', 'routeStyles','ngAnimate', 'toastr','frapontillo.bootstrap-switch','ui.bootstrap','ui.bootstrap.datetimepicker'], function ($httpProvider) {
     $httpProvider.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8';
     let param = function (obj) {
@@ -113,6 +113,10 @@ app.run(function ($rootScope) {
     });
 
     $rootScope.isLoggedIn = false;
+    $rootScope.downloadStudentInfoInProgress = false;
+    $rootScope.downloadEventsInProgress = false;
+    $rootScope.downloadPicsInProgress = false;
+    $rootScope.uploadRegisterInProgress = false;
 });
 
 app.factory("session", function () {
@@ -416,7 +420,8 @@ app.config(function(toastrConfig) {
         positionClass: 'toast-bottom-right',
         progressBar: window.localStorage.getItem('progress-bar') == 'true',
         timeOut: 5000,
-        preventOpenDuplicates: window.localStorage.getItem('hide-repeat') == 'true'
+        preventOpenDuplicates: window.localStorage.getItem('hide-repeat') == 'true',
+        messageClass: 'toast-msg-lg'
     });
 });
 
@@ -493,6 +498,15 @@ app.controller("navbarCtrl", function ($rootScope, $scope, $http, session, $loca
     };
 });
 app.controller('indexCtrl', function ($rootScope) {
+    if (window.localStorage.getItem('show-add-student')===null){
+        window.localStorage.setItem('show-add-student',true);
+    }
+    if (window.localStorage.getItem('show-rm-student')===null){
+        window.localStorage.setItem('show-rm-student',true);
+    }
+    if (window.localStorage.getItem('show-reg-student')===null){
+        window.localStorage.setItem('show-reg-student',true);
+    }
     db = new sqlite3.Database('AOFCheckDB.db', function (error) {
         if (error) console.warn("Failed to initialize database :" + error);
         else {
@@ -533,25 +547,21 @@ app.controller('indexCtrl', function ($rootScope) {
                                     eventStatus : row.status
                                 };
                             }
-                            window.location.href = "#/login";
+                            db.get("SELECT count(*) AS cnt FROM `StudentInfo`",[],function (err, row) {
+                                if (!row.cnt){
+                                    needDownloadDB = true;
+                                }
+                                window.location.href = "#/login";
+                            });
                         });
                     }
                 });
         }
     });
-    if (window.localStorage.getItem('show-add-student')===null){
-        window.localStorage.setItem('show-add-student',true);
-    }
-    if (window.localStorage.getItem('show-rm-student')===null){
-        window.localStorage.setItem('show-rm-student',true);
-    }
-    if (window.localStorage.getItem('show-reg-student')===null){
-        window.localStorage.setItem('show-reg-student',true);
-    }
 });
 app.controller('loginCtrl', function ($scope, $http, session, $rootScope, toastr) {
-    $scope.username = 'admin';
-    $scope.password = '12345';
+    // $scope.username = 'admin';
+    // $scope.password = '12345';
     $scope.isLoggingIn = false;
     $scope.login = function () {
         $scope.isLoggingIn = true;
@@ -570,7 +580,18 @@ app.controller('loginCtrl', function ($scope, $http, session, $rootScope, toastr
                 });
     }
 });
-app.controller('homeCtrl', function ($scope, $rootScope, toastr) {
+app.controller('homeCtrl', function ($scope, $rootScope, toastr, syncManager) {
+    if (needDownloadDB){
+        if ($rootScope.isLoggedIn){
+            if (!$rootScope.downloadStudentInfoInProgress) {
+                $rootScope.downloadStudentInfoInProgress = true;
+                syncManager.downloadStudentInfo(function (ret) {
+                    needDownloadDB = false;
+                    $rootScope.downloadStudentInfoInProgress = false;
+                });
+            }
+        }else {toastr.warning('Your database is empty! please log in!');}
+    }
     $scope.goCheckin = function () {
         if (!$rootScope.localEvent) {
             if ($rootScope.isLoggedIn)
@@ -926,34 +947,34 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     })
 
 });
-app.controller('advancedCtrl', function ($scope, syncManager) {
+app.controller('advancedCtrl', function ($scope, syncManager, toastr, $rootScope) {
     $scope.downloadStudentInfo = function () {
-        if (!$scope.downloadStudentInfoInProgress) {
-            $scope.downloadStudentInfoInProgress = true;
+        if (!$rootScope.downloadStudentInfoInProgress) {
+            $rootScope.downloadStudentInfoInProgress = true;
             syncManager.downloadStudentInfo(function (ret) {
-                $scope.downloadStudentInfoInProgress = false;
+                $rootScope.downloadStudentInfoInProgress = false;
             });
         }
     };
     $scope.downloadEvents = function () {
-        if (!$scope.downloadEventsInProgress) {
-            $scope.downloadEventsInProgress = true;
+        if (!$rootScope.downloadEventsInProgress) {
+            $rootScope.downloadEventsInProgress = true;
             syncManager.downloadEvents(function (ret) {
-                $scope.downloadEventsInProgress = false;
+                $rootScope.downloadEventsInProgress = false;
             });
         }
     };
     $scope.downloadPics = function () {
-        if (!$scope.downloadPicsInProgress) {
+        if (!$rootScope.downloadPicsInProgress) {
             $scope.value = 0;
-            $scope.downloadPicsInProgress = true;
+            $rootScope.downloadPicsInProgress = true;
             syncManager.downloadPics(function (cur, max) {
                 if (max != null) {
                     $scope.maxv = max
                 }
                 if (cur) ++$scope.value;
                 if ($scope.value >= $scope.maxv) {
-                    $scope.downloadPicsInProgress = false;
+                    $rootScope.downloadPicsInProgress = false;
                 }
             });
         }
@@ -961,11 +982,43 @@ app.controller('advancedCtrl', function ($scope, syncManager) {
     $scope.removePics = function () {
         fs.removeSync(photoPath);
     };
+    $scope.uploadRegister = function () {
+        if (!$rootScope.uploadRegisterInProgress) {
+            $rootScope.uploadRegisterInProgress = true;
+            db.all("SELECT * FROM `StudentReg`",[],function (err, rows) {
+                if (rows.length > 0){
+                    let cnt = 0;
+                    rows.forEach(function (row) {
+                        syncManager.uploadRegister(row.id, row.rfid, function (ret) {
+                            if (ret){
+                                db.run("DELETE FROM `StudentReg` WHERE `id` = ?",[row.id],function (err) {
+                                    cnt += 1;
+                                    if (cnt >= rows.length){
+                                        $rootScope.uploadRegisterInProgress = false;
+                                        $scope.$apply();
+                                    }
+                                });
+                            }else {
+                                toastr.error('Failed uploading a student... Try do it again');
+                                cnt += 1;
+                                if (cnt >= rows.length){
+                                    $rootScope.uploadRegisterInProgress = false;
+                                    $scope.$apply();
+                                }
+                            }
+                        });
+                    });
+                }else {
+                    toastr.info('No need for upload!');
+                    $rootScope.uploadRegisterInProgress = false;
+                    $scope.$apply();
+                }
+            });
+        }
+    };
     $scope.value = 0;
     $scope.maxv = 100;
-    $scope.downloadStudentInfoInProgress = false;
-    $scope.downloadEventsInProgress = false;
-    $scope.downloadPicsInProgress = false;
+
 });
 app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $rootScope) {
     $scope.selected = undefined;

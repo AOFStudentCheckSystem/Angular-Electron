@@ -57,6 +57,10 @@ a:hover{
     margin-right: auto;
 }
 
+.toast-msg-lg{
+    font-size:x-large;
+}
+
 @media screen and (max-width: 300px){
     .fa-icon{
         font-size: 7em;

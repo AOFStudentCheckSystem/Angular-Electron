@@ -12,7 +12,8 @@ function createWindow () {
         // when you should delete the corresponding element.
         mainWindow = null
     });
-    mainWindow.toggleDevTools();
+    // mainWindow.toggleDevTools();
+    mainWindow.maximize();
 }
 
 // This method will be called when Electron has finished
