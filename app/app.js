@@ -841,7 +841,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
             $scope.pic = placeHolderPic;
             $scope.fn = 'First Name';
             $scope.ln = 'Last Name';
-            $scope.nn = 'Nick Name';
+            $scope.nn = 'Nickname';
             $scope.$apply();
         }, 5000);
     };
@@ -1341,7 +1341,7 @@ app.controller('regCtrl', function ($scope, syncManager, $rootScope, toastr) {
             $scope.pic = placeHolderPic;
             $scope.fn = 'First Name';
             $scope.ln = 'Last Name';
-            $scope.nn = 'Nick Name';
+            $scope.nn = 'Nickname';
             $scope.$apply();
         }, 5000);
     };
