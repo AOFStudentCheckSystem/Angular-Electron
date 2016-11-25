@@ -80,7 +80,7 @@ let app = angular.module("studentCheck", ['ngRoute', 'routeStyles','ngAnimate', 
     }];
 });
 
-app.run(function ($rootScope) {
+app.run(function ($rootScope, toastr) {
     smartcard = require('smartcard');
     Devices = smartcard.Devices;
     devices = new Devices();
@@ -97,7 +97,7 @@ app.run(function ($rootScope) {
             });
             device.on('error', event => {
                 toastr.error('Card reading error! Please try again!');
-                console.error("Card Reader Error: " + event);
+                console.error("Card reading error: " + event);
             });
         });
     };
@@ -110,6 +110,11 @@ app.run(function ($rootScope) {
     devices.on('device-deactivated', event => {
         console.log("Reader removed :" + event.device);
         registerDevices(event);
+    });
+
+    devices.on('error', event =>{
+        toastr.error('Card reader error! Please restart the program!');
+        console.error("card reader error: " + event);
     });
 
     $rootScope.isLoggedIn = false;
