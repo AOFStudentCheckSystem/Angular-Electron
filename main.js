@@ -13,7 +13,7 @@ function createWindow () {
         mainWindow = null
     });
     // mainWindow.toggleDevTools();
-    mainWindow.maximize();
+    // mainWindow.maximize();
 }
 
 // This method will be called when Electron has finished

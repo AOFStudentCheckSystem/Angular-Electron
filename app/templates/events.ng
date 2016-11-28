@@ -1,7 +1,7 @@
 <div class="container" style="max-width: 700px;">
     <div class="row">
         <div class="col-xs-12">
-            <!--<h1>{{selected}}</h1>-->
+            <!--<h1>{{selectedDate}}</h1>-->
             <div class="list-group-item-heading">
                 <div class="input-group">
                     <div class="input-group-addon">Name</div>
@@ -12,7 +12,7 @@
                             <li><datetimepicker data-ng-model="date" data-on-set-time="onTimeSet(newDate, oldDate)"></datetimepicker></li>
                         </ul>
                     </div>
-                    <input type="datetime" class="form-control" ng-value="selectedDate | date:'yyyy-MM-dd HH:mm:ss'" readonly/>
+                    <input type="datetime" class="form-control" ng-value="selectedDate*1000 | date:'yyyy-MM-dd HH:mm:ss'" readonly/>
                     <span class="input-group-btn"><button class="btn btn-default" ng-disabled = "!eventName || !selectedDate || localEvent" ng-click="addEvent()">Add New Event</button></span>
                 </div>
             </div>

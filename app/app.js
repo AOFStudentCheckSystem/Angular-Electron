@@ -289,7 +289,7 @@ app.factory('syncManager', function ($http, toastr, session, $rootScope) {
             });
         },
         uploadAddEvent: function (eventName, eventTime, callback) {
-            $http.post(domain + 'api/event/add', {eventName: eventName, eventTime: eventTime}).then(function (suc) {
+            $http.post(domain + 'api/event/add', {eventName: eventName, eventTime: eventTime.toString()}).then(function (suc) {
                 callback(suc.data);
             }, function (err) {
                 if (checkErr(err)) callback(null);
@@ -1030,15 +1030,16 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
     $scope.events = [];
     $scope.eventName = '';
     $scope.networkInProgress = true;
-    $scope.selectedDate = new Date();
+    $scope.selectedDate = new Date().getTime()/1000|0;
 
     $scope.openDate = function(){
         $scope.dateOpened = true;
     };
 
     $scope.onTimeSet = function (newDate, oldDate) {
+        // console.log(newDate);
         $scope.dateOpened = false;
-        $scope.selectedDate = newDate;
+        $scope.selectedDate = new Date(newDate).getTime()/1000|0;
     };
 
     let updateEvents = function () {
@@ -1084,7 +1085,8 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
     $scope.addEvent = function () {
         $scope.networkInProgress = true;
         let n = angular.copy($scope.eventName);
-        syncManager.uploadAddEvent(n, new Date($scope.selectedDate).getTime(), function (ret) {
+        // console.log($scope.selectedDate);
+        syncManager.uploadAddEvent(n, $scope.selectedDate, function (ret) {
             if (ret !== null) {
                 toastr.success('Event "' + n + '" added!');
                 updateEvents();
