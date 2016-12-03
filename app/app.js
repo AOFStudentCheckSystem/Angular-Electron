@@ -2,12 +2,13 @@ let smartcard;
 const electron = require('electron');
 const fs = require('fs-extra');
 const sqlite3 = require('sqlite3');
+const path = require('path');
 const eapp = electron.remote.app;
 let Devices;
 let devices;
 let currentDevices = [];
 let db;
-const photoPath = eapp.getPath('appData') + '/student-check-electron-angular/pics';
+const photoPath = path.join(eapp.getPath('appData'),'student-check-electron-angular','pics');
 ///Users/liupeiqi/Library/Application Support/student-check-electron-angular/pics
 const domain = "http://hn2.guardiantech.com.cn:10492/v2/";
 const placeHolderPic = 'http://placekitten.com/300/450';
@@ -182,6 +183,29 @@ app.factory('syncManager', function ($http, toastr, session, $rootScope) {
         }
     };
     return {
+        backup: function (callback) {
+            fs.ensureDir(path.join(process.cwd(),'backup'),function (err) {
+                if (err){
+                    callback(false);
+                }else {
+                    let fileName = new Date().toISOString().split(':').join('.') + '.db';
+                    fs.ensureFile(path.join(process.cwd(),'backup', fileName), function (err) {
+                        if (err){
+                            callback(false);
+                        }else {
+                            fs.copy(path.join(process.cwd(),'AOFCheckDB.db'), path.join(process.cwd(), 'backup', fileName),function (err) {
+                                if (err){
+                                    callback(false);
+                                }else {
+                                    callback(true);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+
+        },
         downloadStudentInfo: function (callback) {
             $http.get(domain + 'api/student/all').then(function (result) {
                 db.serialize(function () {
@@ -851,6 +875,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
         if ($rootScope.isLoggedIn) {
             doUploadRm(stu, 0);
         } else {
+            //No need for backup
             db.run("DELETE FROM `StudentCheck` WHERE `id` = ? AND `eventId` = ?", [stu.id, eventId], function (err) {
                 if (!err) {
                     stu.inTime = '';
@@ -996,11 +1021,17 @@ app.controller('advancedCtrl', function ($scope, syncManager, toastr, $rootScope
                     rows.forEach(function (row) {
                         syncManager.uploadRegister(row.id, row.rfid, function (ret) {
                             if (ret){
-                                db.run("DELETE FROM `StudentReg` WHERE `id` = ?",[row.id],function (err) {
-                                    cnt += 1;
-                                    if (cnt >= rows.length){
-                                        $rootScope.uploadRegisterInProgress = false;
-                                        $scope.$apply();
+                                syncManager.backup(function (backUpSuc) {
+                                    if (backUpSuc){
+                                        db.run("DELETE FROM `StudentReg` WHERE `id` = ?",[row.id],function (err) {
+                                            cnt += 1;
+                                            if (cnt >= rows.length){
+                                                $rootScope.uploadRegisterInProgress = false;
+                                                $scope.$apply();
+                                            }
+                                        });
+                                    }else {
+                                        toastr.error('Backup failed! DB modification aborted!');
                                     }
                                 });
                             }else {
@@ -1163,7 +1194,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
         let evt = $rootScope.localEvent;
         let add = [];
         let reg = [];
-        db.all("SELECT * FROM `StudentCheck` WHERE `eventId` = ?", [evt.id], function (err, rows) {
+        db.all("SELECT * FROM `StudentCheck` WHERE `eventId` = ?", [evt.eventId], function (err, rows) {
             rows.forEach(function (row) {
                 add.push({
                     id: row.id,
@@ -1171,6 +1202,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                     outTime: row.outTime
                 });
             });
+            console.log(add.length);
             // console.log("add array created");
             db.all("SELECT * FROM `StudentReg`", [], function (err, rows) {
                 rows.forEach(function (row) {
@@ -1189,64 +1221,70 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
         syncManager.uploadGiveBackEvent(evt, function (ret) {
             // console.log("uploadGiveBackEvent");
             if (ret) {
-                db.run("DELETE FROM `Events` WHERE `eventId` = ?", [evt.eventId], function (err) {
-                    if (!err) {
-                        $rootScope.localEvent = undefined;
-                        syncManager.uploadAddStudent(add, evt.eventId, function (ret) {
-                            // console.log("uploadAddStudent");
-                            if (ret) {
-                                db.run("DELETE FROM `StudentCheck`", [], function (err) {
-                                    // console.log("DELETE FROM `StudentCheck`");
-                                    if (!err) {
-                                        if (reg.length == 0) {
-                                            toastr.success('Give back event "' + evt.eventName + '"');
-                                            updateEvents();
-                                            $scope.networkInProgress = false;
-                                            $scope.selected = undefined;
-                                        } else {
-                                            let cnt = 0;
-                                            reg.forEach(function (stu) {
-                                                syncManager.uploadRegister(stu.id, stu.rfid, function (ret) {
-                                                    cnt += 1;
-                                                    // console.log("uploadRegister");
-                                                    if (ret) {
-                                                        db.run("DELETE FROM `StudentReg` WHERE `id` = ?", [stu.id], function (err) {
-                                                            if (cnt >= reg.length) {
-                                                                toastr.success('Give back event "' + evt.eventName + '"');
-                                                                updateEvents();
-                                                                $scope.networkInProgress = false;
-                                                                $scope.selected = undefined;
+                syncManager.backup(function (backUpSuc) {
+                    if (backUpSuc){
+                        db.run("DELETE FROM `Events` WHERE `eventId` = ?", [evt.eventId], function (err) {
+                            if (!err) {
+                                $rootScope.localEvent = undefined;
+                                syncManager.uploadAddStudent(add, evt.eventId, function (ret) {
+                                    // console.log("uploadAddStudent");
+                                    if (ret) {
+                                        db.run("DELETE FROM `StudentCheck`", [], function (err) {
+                                            // console.log("DELETE FROM `StudentCheck`");
+                                            if (!err) {
+                                                if (reg.length == 0) {
+                                                    toastr.success('Give back event "' + evt.eventName + '"');
+                                                    updateEvents();
+                                                    $scope.networkInProgress = false;
+                                                    $scope.selected = undefined;
+                                                } else {
+                                                    let cnt = 0;
+                                                    reg.forEach(function (stu) {
+                                                        syncManager.uploadRegister(stu.id, stu.rfid, function (ret) {
+                                                            cnt += 1;
+                                                            // console.log("uploadRegister");
+                                                            if (ret) {
+                                                                db.run("DELETE FROM `StudentReg` WHERE `id` = ?", [stu.id], function (err) {
+                                                                    if (cnt >= reg.length) {
+                                                                        toastr.success('Give back event "' + evt.eventName + '"');
+                                                                        updateEvents();
+                                                                        $scope.networkInProgress = false;
+                                                                        $scope.selected = undefined;
+                                                                    }
+                                                                });
+                                                            } else {
+                                                                // console.warn("update " + stu.id + " failed!");
+                                                                toastr.warning("Upload register error! Please go to advanced!",{timeOut:10000});
+                                                                if (cnt >= reg.length) {
+                                                                    toastr.success('Give back event "' + evt.eventName + '"');
+                                                                    updateEvents();
+                                                                    $scope.networkInProgress = false;
+                                                                    $scope.selected = undefined;
+                                                                }
                                                             }
                                                         });
-                                                    } else {
-                                                        // console.warn("update " + stu.id + " failed!");
-                                                        toastr.warning("Upload register error! Please go to advanced!",{timeOut:10000});
-                                                        if (cnt >= reg.length) {
-                                                            toastr.success('Give back event "' + evt.eventName + '"');
-                                                            updateEvents();
-                                                            $scope.networkInProgress = false;
-                                                            $scope.selected = undefined;
-                                                        }
-                                                    }
-                                                });
-                                            });
-                                        }
+                                                    });
+                                                }
+                                            }else {
+                                                toastr.error("Database error!",{timeOut:10000});
+                                                $scope.networkInProgress = false;
+                                                $scope.selected = undefined;
+                                            }
+                                        });
                                     }else {
-                                        toastr.error("Database error!",{timeOut:10000});
+                                        toastr.error("Add students failed!",{timeOut:10000});
                                         $scope.networkInProgress = false;
                                         $scope.selected = undefined;
                                     }
                                 });
                             }else {
-                                toastr.error("Add students failed!",{timeOut:10000});
+                                toastr.error("Database error!",{timeOut:10000});
                                 $scope.networkInProgress = false;
                                 $scope.selected = undefined;
                             }
                         });
                     }else {
-                        toastr.error("Database error!",{timeOut:10000});
-                        $scope.networkInProgress = false;
-                        $scope.selected = undefined;
+                        toastr.error('Backup failed! DB modification aborted!',{timeOut:10000});
                     }
                 });
             }else {
