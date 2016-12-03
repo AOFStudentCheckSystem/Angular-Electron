@@ -40,5 +40,8 @@
                 </div>
             </div>
         </div>
+        <div class="col-xs-12">
+            <h4>Data Path: {{dataPath}}</h4>
+        </div>
     </div>
 </div>

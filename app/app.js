@@ -8,7 +8,8 @@ let Devices;
 let devices;
 let currentDevices = [];
 let db;
-const photoPath = path.join(eapp.getPath('appData'),'student-check-electron-angular','pics');
+const dataPath = path.join(eapp.getPath('appData'),'student-check-electron-angular');
+const photoPath = path.join(dataPath,'pics');
 ///Users/liupeiqi/Library/Application Support/student-check-electron-angular/pics
 const domain = "http://hn2.guardiantech.com.cn:10492/v2/";
 const placeHolderPic = 'http://placekitten.com/300/450';
@@ -184,16 +185,16 @@ app.factory('syncManager', function ($http, toastr, session, $rootScope) {
     };
     return {
         backup: function (callback) {
-            fs.ensureDir(path.join(process.cwd(),'backup'),function (err) {
+            fs.ensureDir(path.join(dataPath,'backup'),function (err) {
                 if (err){
                     callback(false);
                 }else {
                     let fileName = new Date().toISOString().split(':').join('.') + '.db';
-                    fs.ensureFile(path.join(process.cwd(),'backup', fileName), function (err) {
+                    fs.ensureFile(path.join(dataPath,'backup', fileName), function (err) {
                         if (err){
                             callback(false);
                         }else {
-                            fs.copy(path.join(process.cwd(),'AOFCheckDB.db'), path.join(process.cwd(), 'backup', fileName),function (err) {
+                            fs.copy(path.join(dataPath,'AOFCheckDB.db'), path.join(dataPath, 'backup', fileName),function (err) {
                                 if (err){
                                     callback(false);
                                 }else {
@@ -546,7 +547,7 @@ app.controller('indexCtrl', function ($rootScope) {
     if (window.localStorage.getItem('show-reg-student')===null){
         window.localStorage.setItem('show-reg-student',true);
     }
-    db = new sqlite3.Database('AOFCheckDB.db', function (error) {
+    db = new sqlite3.Database(path.join(dataPath,'AOFCheckDB.db'), function (error) {
         if (error) console.warn("Failed to initialize database :" + error);
         else {
             db.exec(
@@ -625,8 +626,12 @@ app.controller('homeCtrl', function ($scope, $rootScope, toastr, syncManager) {
             if (!$rootScope.downloadStudentInfoInProgress) {
                 $rootScope.downloadStudentInfoInProgress = true;
                 syncManager.downloadStudentInfo(function (ret) {
-                    needDownloadDB = false;
-                    $rootScope.downloadStudentInfoInProgress = false;
+                    if (ret){
+                        needDownloadDB = false;
+                        $rootScope.downloadStudentInfoInProgress = false;
+                    }else {
+                        toastr.warning('Failed to download DB!');
+                    }
                 });
             }
         }else {toastr.warning('Your database is empty! please log in!');}
@@ -1084,21 +1089,6 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
     };
 
     let updateEvents = function () {
-        // db.get("SELECT * FROM `Events`", [], function (err, row) {
-        //     if (row) {
-        //         $scope.localEvent = {
-        //             eventId: row.eventId,
-        //             eventName: row.eventName,
-        //             eventTime: row.eventTime,
-        //             eventStatus: row.status,
-        //             token: row.token
-        //         };
-        //
-        //     } else {
-        //         $scope.localEvent = undefined;
-        //     }
-        //
-        // });
         if ($rootScope.localEvent){
             toastr.info('You have a local event "'+ $rootScope.localEvent.eventName + '"');
         }
@@ -1212,7 +1202,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                     outTime: row.outTime
                 });
             });
-            console.log(add.length);
+            // console.log(add.length);
             // console.log("add array created");
             db.all("SELECT * FROM `StudentReg`", [], function (err, rows) {
                 rows.forEach(function (row) {
@@ -1239,7 +1229,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                                 syncManager.uploadAddStudent(add, evt.eventId, function (ret) {
                                     // console.log("uploadAddStudent");
                                     if (ret) {
-                                        db.run("DELETE FROM `StudentCheck`", [], function (err) {
+                                        db.run("DELETE FROM `StudentCheck` WHERE `eventId` = ?", [evt.eventId], function (err) {
                                             // console.log("DELETE FROM `StudentCheck`");
                                             if (!err) {
                                                 if (reg.length == 0) {
@@ -1463,4 +1453,5 @@ app.controller('settingsCtrl', function ($scope, $window, LS) {
     $scope.progressBarChange = function(){
         LS.set('progress-bar',$scope.progressBar);
     };
+    $scope.dataPath = dataPath;
 });
