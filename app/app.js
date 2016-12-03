@@ -370,6 +370,16 @@ app.factory('syncManager', function ($http, toastr, session, $rootScope) {
                     if (checkErr(err)) callback(false);
                 }
             );
+        },
+        sendEmails: function (emails, event, callback) {
+            $http.post(domain + 'api/event/' + event.eventId + '/send', {recipients: JSON.stringify({recipients: emails})}).then(
+                function (suc) {
+                    callback(true);
+                },
+                function (err) {
+                    if (checkErr(err)) callback(false);
+                }
+            );
         }
     };
 });
@@ -1297,7 +1307,18 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
 
     $scope.emailAdr = '';
     $scope.sendEmail = function () {
-
+        $scope.networkInProgress = true;
+        let evt = angular.copy($scope.selected);
+        let adr = angular.copy($scope.emailAdr.split(','));
+        syncManager.sendEmails(adr,evt,function (ret) {
+            if (ret){
+                toastr.success('Emails sent!');
+                $scope.emailAdr = '';
+            }else {
+                toastr.error('Emails failed to send!');
+            }
+            $scope.networkInProgress = false;
+        });
     }
 });
 app.controller('regCtrl', function ($scope, syncManager, $rootScope, toastr) {

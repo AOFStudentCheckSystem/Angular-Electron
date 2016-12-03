@@ -31,15 +31,15 @@
         <div class="col-xs-12 col-md-6" style="margin-bottom:10px" ng-hide="selected.eventStatus === 2">
             <button class="btn btn-danger btn-block" ng-disabled="!selected || networkInProgress || localEvent" ng-click="makeSureComplete()"><i class="fa fa-exclamation-triangle" ng-show="confirmingComplete"></i>{{confirmingComplete?" Click again to confirm complete":"Complete Event"}}</button>
         </div>
-        <div class="col-xs-12 col-md-6" ng-show="selected.eventStatus === 2">
-            <button class="btn btn-default btn-block" ng-click="sendEmail()">Send Email</button>
-            <textarea ng-model="emailAdr"></textarea>
+        <div class="col-xs-12 col-md-6" ng-show="selected.eventStatus === 2" style="margin-bottom:10px" >
+            <button class="btn btn-default btn-block" ng-disabled="networkInProgress" ng-click="sendEmail()">Send Email</button>
         </div>
         <div class="col-xs-12 col-md-6" ng-show="!localEvent" style="margin-bottom:10px">
-            <button class="btn btn-primary btn-block" ng-disabled="!selected || networkInProgress || localEvent" ng-click="checkOutEvent()">Checkout Event</button>
+            <button class="btn btn-primary btn-block" ng-disabled="!selected || networkInProgress || localEvent || selected.eventStatus === 2" ng-click="checkOutEvent()">Checkout Event</button>
         </div>
         <div class="col-xs-12 col-md-6" ng-show="localEvent" style="margin-bottom:10px">
             <button class="btn btn-success btn-block" ng-disabled="networkInProgress" ng-click="uploadEvent()">Upload Event "{{localEvent.eventName}}"</button>
         </div>
+        <textarea ng-show="selected.eventStatus === 2" placeholder="enter emails separated with ','" ng-model="emailAdr" class="col-xs-12"></textarea>
     </div>
 </div>
