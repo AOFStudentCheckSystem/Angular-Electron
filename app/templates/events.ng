@@ -18,7 +18,7 @@
             </div>
             <div class="list-group">
                 <div style="max-height: 70vh; overflow-y: scroll">
-                    <a class="list-group-item" ng-repeat="event in events | filter:activeFilter" ng-click="selectItem(event)" ng-class="{active: isActive(event)}">
+                    <a class="list-group-item" ng-repeat="event in events" ng-click="selectItem(event)" ng-class="{active: isActive(event)}">
                         <h4 class="list-group-item-heading">{{event.eventName}}</h4>
                         <span class="list-group-item-text">{{event.eventStatus==0?"Planning":(event.eventStatus==1?"Boarding":"Completed")}}</span>
                         <span class="list-group-item-text" style="float: right">{{event.eventTime*1000 | date:'yyyy-MM-dd HH:mm:ss'}}</span>
@@ -28,8 +28,12 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-xs-12 col-md-6" style="margin-bottom:10px">
+        <div class="col-xs-12 col-md-6" style="margin-bottom:10px" ng-hide="selected.eventStatus === 2">
             <button class="btn btn-danger btn-block" ng-disabled="!selected || networkInProgress || localEvent" ng-click="makeSureComplete()"><i class="fa fa-exclamation-triangle" ng-show="confirmingComplete"></i>{{confirmingComplete?" Click again to confirm complete":"Complete Event"}}</button>
+        </div>
+        <div class="col-xs-12 col-md-6" ng-show="selected.eventStatus === 2">
+            <button class="btn btn-default btn-block" ng-click="sendEmail()">Send Email</button>
+            <textarea ng-model="emailAdr"></textarea>
         </div>
         <div class="col-xs-12 col-md-6" ng-show="!localEvent" style="margin-bottom:10px">
             <button class="btn btn-primary btn-block" ng-disabled="!selected || networkInProgress || localEvent" ng-click="checkOutEvent()">Checkout Event</button>

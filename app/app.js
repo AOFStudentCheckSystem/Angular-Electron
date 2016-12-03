@@ -1255,6 +1255,11 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                 $scope.selected = undefined;
             }
         });
+    };
+
+    $scope.emailAdr = '';
+    $scope.sendEmail = function () {
+
     }
 });
 app.controller('regCtrl', function ($scope, syncManager, $rootScope, toastr) {
