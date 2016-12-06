@@ -29,7 +29,7 @@
                     </div>
                 </a>
             </div>
-            <button class="btn btn-primary btn-lg" ng-click="manualUpdate()">Manually update</button>
+            <button class="btn btn-primary btn-lg" ng-click="manualUpdate()" ng-show="isLoggedIn">Manually update</button>
         </div>
     </div>
 </div>
