@@ -8,6 +8,7 @@ let Devices;
 let devices;
 let currentDevices = [];
 let db;
+let intervalId = undefined;
 const dataPath = path.join(eapp.getPath('appData'),'student-check-electron-angular');
 const photoPath = path.join(dataPath,'pics');
 ///Users/liupeiqi/Library/Application Support/student-check-electron-angular/pics
@@ -165,23 +166,26 @@ app.factory('httpInterceptor', function ($q, $injector, session) {
 //Network & DB
 app.factory('syncManager', function ($http, toastr, session, $rootScope) {
     let checkErr = function (err) {
-        if (err.status === 401){
-            $http.post(domain + 'api/auth/verify', {}).then(function (suc) {
-                //No permission
-                    toastr.error('You do not have permission to do this! ' + suc.data.emoticon);
-                    return true;
-                },
-                function (error) {
-                //Token timeout
-                    $rootScope.isLoggedIn = false;
-                    session.clear();
-                    window.location.href = '#/home';
-                    toastr.error('You have been idling for too long and you are logged out!');
-                    return false;
-                });
-        }else {
-            return true;
+        if ($rootScope.isLoggedIn) {
+            if (err.status === 401) {
+                $http.post(domain + 'api/auth/verify', {}).then(function (suc) {
+                        //No permission
+                        toastr.error('You do not have permission to do this! ' + suc.data.emoticon);
+                        return true;
+                    },
+                    function (error) {
+                        //Token timeout
+                        $rootScope.isLoggedIn = false;
+                        session.clear();
+                        window.location.href = '#/home';
+                        toastr.error('You have been idling for too long and you are logged out!');
+                        return false;
+                    });
+            } else {
+                return true;
+            }
         }
+        return true;
     };
     return {
         backup: function (callback) {
@@ -498,7 +502,7 @@ app.controller("navbarCtrl", function ($rootScope, $scope, $http, session, $loca
         }
     };
 
-    let list = function () {
+    let list = function (evokeChange) {
         let url = '';
         switch ('/' + $location.url().split('/')[1]) {
             // case '/home':
@@ -508,9 +512,16 @@ app.controller("navbarCtrl", function ($rootScope, $scope, $http, session, $loca
                 url = '/home';
                 break;
             case '/checkin':
-                if ($rootScope.isLoggedIn)
+                if ($rootScope.isLoggedIn){
                     url = '/event';
-                else url = '/home';
+                }
+                else {url = '/home';}
+                if (evokeChange){
+                    if (intervalId){
+                        clearInterval(intervalId);
+                        intervalId = undefined;
+                    }
+                }
                 break;
             case '/advanced':
                 url = '/home';
@@ -527,11 +538,11 @@ app.controller("navbarCtrl", function ($rootScope, $scope, $http, session, $loca
         return url;
     };
     $scope.isBackNeed = function () {
-        return list() != '';
+        return list(false) != '';
     };
     $scope.goBack = function () {
         /*window.history.back();*/
-        let url = list();
+        let url = list(true);
         if (url != '') {
             $location.url(url);
         }
@@ -728,7 +739,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
 
         if ($rootScope.isLoggedIn) {
             updateEventStudents();
-            setInterval(function(){updateEventStudents()},5000);
+            intervalId = setInterval(function(){updateEventStudents()},5000);
         }
         else {
             db.all("SELECT * FROM `StudentCheck` WHERE `eventId` = ?", [eventId], function (err, rows) {
@@ -1100,7 +1111,9 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
             }
         });
     };
-    updateEvents();
+    if ($rootScope.isLoggedIn){
+        updateEvents();
+    }
 
     $scope.selectItem = function (item) {
         $scope.selected = item;
