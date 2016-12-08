@@ -513,15 +513,15 @@ app.controller("navbarCtrl", function ($rootScope, $scope, $http, session, $loca
                 break;
             case '/checkin':
                 if ($rootScope.isLoggedIn){
+                    if (evokeChange){
+                        if (intervalId){
+                            clearInterval(intervalId);
+                            intervalId = undefined;
+                        }
+                    }
                     url = '/event';
                 }
                 else {url = '/home';}
-                if (evokeChange){
-                    if (intervalId){
-                        clearInterval(intervalId);
-                        intervalId = undefined;
-                    }
-                }
                 break;
             case '/advanced':
                 url = '/home';
