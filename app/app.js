@@ -9,6 +9,7 @@ let devices;
 let currentDevices = [];
 let db;
 let intervalId = undefined;
+let progressInterval = undefined;
 const dataPath = path.join(eapp.getPath('appData'),'student-check-electron-angular');
 const photoPath = path.join(dataPath,'pics');
 ///Users/liupeiqi/Library/Application Support/student-check-electron-angular/pics
@@ -425,7 +426,7 @@ app.config(function ($routeProvider) {
             templateUrl: 'templates/event.ng',
             controller: 'eventCtrl'
         })
-        .when("/checkin/:eventId/:eventName", {
+        .when("/checkin/:eventId", {
             templateUrl: 'templates/checkin.ng',
             controller: 'checkinCtrl'
         })
@@ -495,6 +496,8 @@ app.controller("navbarCtrl", function ($rootScope, $scope, $http, session, $loca
         if ($scope.isLoggedIn) {
             session.clear();
             $rootScope.isLoggedIn = false;
+            if (intervalId){clearInterval(intervalId); intervalId = undefined;}
+            if (progressInterval){clearInterval(progressInterval); progressInterval = undefined;}
             toastr.info('You have logged out');
             $location.url('/home');
         } else {
@@ -503,6 +506,10 @@ app.controller("navbarCtrl", function ($rootScope, $scope, $http, session, $loca
     };
 
     let list = function (evokeChange) {
+        if (evokeChange){
+            if (intervalId){clearInterval(intervalId); intervalId = undefined;}
+            if (progressInterval){clearInterval(progressInterval); progressInterval = undefined;}
+        }
         let url = '';
         switch ('/' + $location.url().split('/')[1]) {
             // case '/home':
@@ -513,12 +520,6 @@ app.controller("navbarCtrl", function ($rootScope, $scope, $http, session, $loca
                 break;
             case '/checkin':
                 if ($rootScope.isLoggedIn){
-                    if (evokeChange){
-                        if (intervalId){
-                            clearInterval(intervalId);
-                            intervalId = undefined;
-                        }
-                    }
                     url = '/event';
                 }
                 else {url = '/home';}
@@ -659,7 +660,7 @@ app.controller('homeCtrl', function ($scope, $rootScope, toastr, syncManager) {
             ($rootScope.isLoggedIn) toastr.warning("Please go to Events menu to give back the local event!",{timeOut:10000});
             else {
                 toastr.info('You are checking in for event "' + $rootScope.localEvent.eventName + '"');
-                window.location.href = "#/checkin/" + $rootScope.localEvent.eventId + '/' + $rootScope.localEvent.eventName;
+                window.location.href = "#/checkin/" + $rootScope.localEvent.eventId;
             }
 
         }
@@ -684,7 +685,7 @@ app.controller('homeCtrl', function ($scope, $rootScope, toastr, syncManager) {
         }
     }
 });
-app.controller('eventCtrl', function ($scope, $http, syncManager, toastr) {
+app.controller('eventCtrl', function ($scope, $http, syncManager, toastr, $rootScope) {
     $scope.selected = undefined;
     $scope.events = [];
 
@@ -708,7 +709,8 @@ app.controller('eventCtrl', function ($scope, $http, syncManager, toastr) {
     $scope.continueEvent = function () {
         console.log($scope.selected.eventId);
         toastr.info('You are checking in for event "' + $scope.selected.eventName + '"',{timeOut:10000});
-        window.location.href = "#/checkin/" + $scope.selected.eventId + '/' +  $scope.selected.eventName;
+        $rootScope.eventName = $scope.selected.eventName;
+        window.location.href = "#/checkin/" + $scope.selected.eventId;
     };
     $scope.activeFilter = function (event) {
         return event.eventStatus != 2;
@@ -716,7 +718,6 @@ app.controller('eventCtrl', function ($scope, $http, syncManager, toastr) {
 });
 app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManager, $rootScope, toastr, LS) {
     $scope.students = [];
-    $scope.eventName = $routeParams.eventName;
     let eventId = $routeParams.eventId;
 
     db.all("SELECT * FROM `StudentInfo`", function (err, rows) {
@@ -737,9 +738,15 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
             });
         }
 
+        let lastUpdate = new Date().getTime();
+
         if ($rootScope.isLoggedIn) {
             updateEventStudents();
-            intervalId = setInterval(function(){updateEventStudents()},5000);
+            intervalId = setInterval(function(){lastUpdate = new Date().getTime(); updateEventStudents();},5000);
+            progressInterval = setInterval(function () {
+                $scope.refreshProgress = 100 - (new Date().getTime() - lastUpdate)/50;
+                $scope.$apply();
+            },50);
         }
         else {
             db.all("SELECT * FROM `StudentCheck` WHERE `eventId` = ?", [eventId], function (err, rows) {
@@ -1088,6 +1095,8 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
     $scope.networkInProgress = true;
     $scope.selectedDate = new Date().getTime()/1000|0;
 
+    let lastUpdate = new Date().getTime();
+
     $scope.openDate = function(){
         $scope.dateOpened = true;
     };
@@ -1098,10 +1107,11 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
         $scope.selectedDate = new Date(newDate).getTime()/1000|0;
     };
 
+    if ($rootScope.localEvent){
+        toastr.info('You have a local event "'+ $rootScope.localEvent.eventName + '"');
+    }
+
     let updateEvents = function () {
-        if ($rootScope.localEvent){
-            toastr.info('You have a local event "'+ $rootScope.localEvent.eventName + '"');
-        }
         syncManager.downloadEvents(function (ret1) {
             if (ret1 === null){
                 toastr.error('Failed to fetch event list!',{timeOut:10000});
@@ -1113,6 +1123,14 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
     };
     if ($rootScope.isLoggedIn){
         updateEvents();
+        intervalId = setInterval(function () {
+            lastUpdate = new Date().getTime();
+            updateEvents();
+        },10000);
+        progressInterval = setInterval(function () {
+            $scope.refreshProgress = 100 - (new Date().getTime() - lastUpdate)/100;
+            $scope.$apply();
+        },50);
     }
 
     $scope.selectItem = function (item) {

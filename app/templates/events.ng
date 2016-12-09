@@ -16,6 +16,9 @@
                     <span class="input-group-btn"><button class="btn btn-default" ng-disabled = "!eventName || !selectedDate || localEvent" ng-click="addEvent()">Add New Event</button></span>
                 </div>
             </div>
+            <div ng-show="isLoggedIn" class="progress" style="height: 5px; margin-bottom: 5px">
+                <div class="progress-bar progress-bar-info" role="progressbar" ng-style="{'width': refreshProgress + '%'}" style="transition-duration:50ms"></div>
+            </div>
             <div class="list-group">
                 <div style="max-height: 70vh; overflow-y: scroll">
                     <a class="list-group-item" ng-repeat="event in events" ng-click="selectItem(event)" ng-class="{active: isActive(event)}">

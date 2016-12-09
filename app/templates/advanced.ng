@@ -5,7 +5,7 @@
                 <div class="panel panel-default">
                     <div class="panel-body text-center">
                         <h1>Download Students</h1>
-                        <h4>Last Sync: whatever</h4>
+                        <h4>whatever</h4>
                         <i class="fa fa-refresh" ng-class="{'fa-spin' : downloadStudentInfoInProgress}" style="font-size: 10vmin"></i>
                     </div>
                 </div>
@@ -27,7 +27,7 @@
                 <div class="panel panel-default">
                     <div class="panel-body text-center">
                         <h1>Upload Register</h1>
-                        <h4>Last Sync: whatever</h4>
+                        <h4>whatever</h4>
                         <i class="fa fa-refresh" ng-class="{'fa-spin' : uploadRegisterInProgress}" style="font-size: 10vmin"></i>
                     </div>
                 </div>
@@ -38,7 +38,7 @@
                 <div class="panel panel-default">
                     <div class="panel-body text-center">
                         <h1>Download Photos</h1>
-                        <h4>Last Sync: whatever</h4>
+                        <h4>whatever</h4>
                         <div class="progress">
                             <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" ng-style="{'width': value*100/maxv + '%', 'min-width': '2em'}" ng-class="{'active':downloadPicsInProgress}">
                                 {{(value*100/maxv | number:0) + '%'}}
