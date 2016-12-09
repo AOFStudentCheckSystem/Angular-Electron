@@ -61,6 +61,8 @@ a:hover{
     font-size:large;
 }
 
+.progress-bar-grey {background: rgba(82, 82, 82, 1);}
+
 @media screen and (max-width: 300px){
     .fa-icon{
         font-size: 7em;

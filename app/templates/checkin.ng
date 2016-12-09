@@ -16,7 +16,7 @@
         </div>
         <div class="col-xs-6">
             <div ng-show="isLoggedIn" class="progress" style="height: 5px; margin-bottom: 10px">
-                <div class="progress-bar progress-bar-info" role="progressbar" ng-style="{'width': refreshProgress + '%'}" style="transition-duration:50ms"></div>
+                <div class="progress-bar progress-bar-grey" role="progressbar" ng-style="{'width': refreshProgress + '%'}" style="transition-duration:50ms"></div>
             </div>
             <div class="list-group-item-heading">
                 <input type="text" name="qInput" class="form-control" ng-model="q" placeholder="search by last name" autofocus/>
