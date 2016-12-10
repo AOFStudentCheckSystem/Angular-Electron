@@ -1116,7 +1116,23 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
             if (ret1 === null){
                 toastr.error('Failed to fetch event list!',{timeOut:10000});
             }else {
-                $scope.events = ret1;
+                $scope.events.forEach(function (existEvt) {
+                    let rm = true;
+                    for(let i = 0; i < ret1.length; i++){
+                        if (ret1[i].eventId === existEvt.eventId){
+                            existEvt.eventName = ret1[i].eventName;
+                            existEvt.eventTime = ret1[i].eventTime;
+                            existEvt.eventStatus = ret1[i].eventStatus;
+                            ret1.splice(i, 1);
+                            rm = false;
+                            break;
+                        }
+                    }
+                    if (rm){
+                        $scope.events.splice($scope.events.indexOf(existEvt),1);
+                    }
+                });
+                $scope.events = $scope.events.concat(ret1);
                 $scope.networkInProgress = false;
             }
         });
@@ -1209,6 +1225,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                             db.run("COMMIT");
                             toastr.success('Check out event "' + evt.eventName + '"');
                             updateEvents();
+                            $scope.selected = undefined;
                             $scope.networkInProgress = false;
                         });
                     }
@@ -1232,9 +1249,9 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                     inTime: row.inTime,
                     outTime: row.outTime
                 };
-                if (row.status == 1){
+                if (row.status === 1){
                     add.push(stu);
-                }else if(row.status == -1){
+                }else if(row.status === -1){
                     rm.push(stu);
                 }
             });
