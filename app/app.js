@@ -719,6 +719,7 @@ app.controller('eventCtrl', function ($scope, $http, syncManager, toastr, $rootS
 app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManager, $rootScope, toastr, LS) {
     $scope.students = [];
     let eventId = $routeParams.eventId;
+    let lastUpdate = 0;
 
     db.all("SELECT * FROM `StudentInfo`", function (err, rows) {
         if (!rows){
@@ -738,11 +739,9 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
             });
         }
 
-        let lastUpdate = new Date().getTime();
-
         if ($rootScope.isLoggedIn) {
             updateEventStudents();
-            intervalId = setInterval(function(){lastUpdate = new Date().getTime(); updateEventStudents();},5000);
+            intervalId = setInterval(function(){updateEventStudents();},5000);
             progressInterval = setInterval(function () {
                 $scope.refreshProgress = 100 - (new Date().getTime() - lastUpdate)/50;
                 $scope.$apply();
@@ -786,6 +785,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                     }
                 }
             }
+            lastUpdate = new Date().getTime();
         });
     };
     $scope.manualUpdate = function () {
@@ -1095,7 +1095,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
     $scope.networkInProgress = true;
     $scope.selectedDate = new Date().getTime()/1000|0;
 
-    let lastUpdate = new Date().getTime();
+    let lastUpdate = 0;
 
     $scope.openDate = function(){
         $scope.dateOpened = true;
@@ -1135,12 +1135,12 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                 $scope.events = $scope.events.concat(ret1);
                 $scope.networkInProgress = false;
             }
+            lastUpdate = new Date().getTime();
         });
     };
     if ($rootScope.isLoggedIn){
         updateEvents();
         intervalId = setInterval(function () {
-            lastUpdate = new Date().getTime();
             updateEvents();
         },10000);
         progressInterval = setInterval(function () {
