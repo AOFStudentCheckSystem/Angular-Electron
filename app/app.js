@@ -688,6 +688,7 @@ app.controller('homeCtrl', function ($scope, $rootScope, toastr, syncManager) {
 app.controller('eventCtrl', function ($scope, $http, syncManager, toastr, $rootScope) {
     $scope.selected = undefined;
     $scope.events = [];
+    let updated = false;
 
     let updateEvents = function () {
         syncManager.downloadEvents(function (ret1) {
@@ -696,6 +697,7 @@ app.controller('eventCtrl', function ($scope, $http, syncManager, toastr, $rootS
             }else {
                 toastr.error('Failed to fetch event list!',{timeOut:10000});
             }
+            updated = true;
         });
     };
     updateEvents();
@@ -714,6 +716,10 @@ app.controller('eventCtrl', function ($scope, $http, syncManager, toastr, $rootS
     };
     $scope.activeFilter = function (event) {
         return event.eventStatus != 2;
+    };
+
+    $scope.noEventAvailable = function () {
+        return updated && !$scope.events.filter($scope.activeFilter).length;
     };
 });
 app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManager, $rootScope, toastr, LS) {
@@ -1116,6 +1122,8 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
             if (ret1 === null){
                 toastr.error('Failed to fetch event list!',{timeOut:10000});
             }else {
+                // console.log("Receiving:" + JSON.stringify(ret1));
+                let needRm = [];
                 $scope.events.forEach(function (existEvt) {
                     let rm = true;
                     for(let i = 0; i < ret1.length; i++){
@@ -1125,14 +1133,23 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                             existEvt.eventStatus = ret1[i].eventStatus;
                             ret1.splice(i, 1);
                             rm = false;
+                            // console.log("Found event & updating:" + existEvt.eventName);
                             break;
                         }
                     }
                     if (rm){
-                        $scope.events.splice($scope.events.indexOf(existEvt),1);
+                        if ($scope.selected === existEvt){
+                            $scope.selected = undefined;
+                        }
+                        // console.log("Remove event:" + existEvt.eventName);
+                        needRm.push($scope.events.indexOf(existEvt));
                     }
                 });
-                $scope.events = $scope.events.concat(ret1);
+                needRm.forEach(function (val) {
+                    $scope.events.splice(val,1);
+                });
+                // console.log("Add New Events:" + JSON.stringify(ret1));
+                $scope.events = ret1.concat($scope.events);
                 $scope.networkInProgress = false;
             }
             lastUpdate = new Date().getTime();
@@ -1202,7 +1219,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                 toastr.error('Failed to completed event "' + evt.eventName + '" !');
                 $scope.networkInProgress = false;
             }
-            $scope.selected = undefined;
+            //$scope.selected = undefined;
         });
         // }
     };

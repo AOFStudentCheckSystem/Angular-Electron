@@ -1,7 +1,7 @@
 <div class="container" style="max-width: 700px;">
     <div class="row">
         <div class="col-xs-12">
-            <!--<h1>{{selected}}</h1>-->
+            <h1 ng-show="noEventAvailable()">No Available Event!</h1>
             <div class="list-group">
                 <div style="max-height: 70vh; overflow-y: scroll">
                 <a class="list-group-item" ng-repeat="event in events | filter:activeFilter" ng-click="selectItem(event)" ng-class="{active: isActive(event)}">
