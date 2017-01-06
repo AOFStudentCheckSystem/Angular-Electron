@@ -10,8 +10,8 @@ let currentDevices = [];
 let db;
 let intervalId = undefined;
 let progressInterval = undefined;
-const dataPath = path.join(eapp.getPath('appData'),'student-check-electron-angular');
-const photoPath = path.join(dataPath,'pics');
+const dataPath = path.join(eapp.getPath('appData'), 'student-check-electron-angular');
+const photoPath = path.join(dataPath, 'pics');
 ///Users/liupeiqi/Library/Application Support/student-check-electron-angular/pics
 const domain = "http://hn2.guardiantech.com.cn:10492/v2/";
 const placeHolderPic = 'http://placekitten.com/300/450';
@@ -44,9 +44,9 @@ let standardize = function (s) {
 //         return window.localStorage.getItem(key);
 //     }
 // };
-let settings = ['show-add-student','show-rm-student','show-reg-student','hide-repeat','progress-bar'];
+let settings = ['show-add-student', 'show-rm-student', 'show-reg-student', 'hide-repeat', 'progress-bar'];
 let needDownloadDB = false;
-let app = angular.module("studentCheck", ['ngRoute', 'routeStyles','ngAnimate', 'toastr','frapontillo.bootstrap-switch','ui.bootstrap','ui.bootstrap.datetimepicker'], function ($httpProvider) {
+let app = angular.module("studentCheck", ['ngRoute', 'routeStyles', 'ngAnimate', 'toastr', 'frapontillo.bootstrap-switch', 'ui.bootstrap', 'ui.bootstrap.datetimepicker'], function ($httpProvider) {
     $httpProvider.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8';
     let param = function (obj) {
         let query = '', name, value, fullSubName, subName, subValue, innerObj, i;
@@ -116,7 +116,7 @@ app.run(function ($rootScope, toastr) {
         registerDevices(event);
     });
 
-    devices.on('error', event =>{
+    devices.on('error', event => {
         toastr.error('Card reader error! Please restart the program!');
         console.error("card reader error: " + event);
     });
@@ -190,19 +190,19 @@ app.factory('syncManager', function ($http, toastr, session, $rootScope) {
     };
     return {
         backup: function (callback) {
-            fs.ensureDir(path.join(dataPath,'backup'),function (err) {
-                if (err){
+            fs.ensureDir(path.join(dataPath, 'backup'), function (err) {
+                if (err) {
                     callback(false);
-                }else {
+                } else {
                     let fileName = new Date().toISOString().split(':').join('.') + '.db';
-                    fs.ensureFile(path.join(dataPath,'backup', fileName), function (err) {
-                        if (err){
+                    fs.ensureFile(path.join(dataPath, 'backup', fileName), function (err) {
+                        if (err) {
                             callback(false);
-                        }else {
-                            fs.copy(path.join(dataPath,'AOFCheckDB.db'), path.join(dataPath, 'backup', fileName),function (err) {
-                                if (err){
+                        } else {
+                            fs.copy(path.join(dataPath, 'AOFCheckDB.db'), path.join(dataPath, 'backup', fileName), function (err) {
+                                if (err) {
                                     callback(false);
-                                }else {
+                                } else {
                                     callback(true);
                                 }
                             });
@@ -282,24 +282,27 @@ app.factory('syncManager', function ($http, toastr, session, $rootScope) {
          * @param callback true if succeed, false if failed;
          */
         uploadAddStudent: function (students, eventId, callback) {
-            let addArr = [];
-            students.forEach(function (stu) {
-                addArr.push({
-                    id: stu.id.toString(),
-                    checkin: stu.inTime.toString(),
-                    checkout: stu.outTime.toString()
+            if (students.length > 0) {
+                let addArr = [];
+                students.forEach(function (stu) {
+                    addArr.push({
+                        id: stu.id.toString(),
+                        checkin: stu.inTime.toString(),
+                        checkout: stu.outTime.toString()
+                    });
                 });
-            });
-            $http.post(domain + 'api/event/' + eventId + '/add', {
-                data: JSON.stringify({
-                    add: addArr
-                })
-            }).then(function (suc) {
+                $http.post(domain + 'api/event/' + eventId + '/add', {
+                    data: JSON.stringify({
+                        add: addArr
+                    })
+                }).then(function (suc) {
+                    callback(true);
+                }, function (err) {
+                    if (checkErr(err)) callback(false);
+                });
+            } else {
                 callback(true);
-            }, function (err) {
-                if (checkErr(err)) callback(false);
-            });
-
+            }
         },
         /**
          * Upload remove students to server
@@ -308,18 +311,25 @@ app.factory('syncManager', function ($http, toastr, session, $rootScope) {
          * @param callback true if succeed, false if failed;
          */
         uploadRemoveStudent: function (students, eventId, callback) {
-            let rmArr = [];
-            students.forEach(function (stu) {
-                rmArr.push(stu.id.toString());
-            });
-            $http.post(domain + 'api/event/' + eventId + '/remove', {data: JSON.stringify({remove: rmArr})}).then(function (suc) {
+            if (students.length > 0) {
+                let rmArr = [];
+                students.forEach(function (stu) {
+                    rmArr.push(stu.id.toString());
+                });
+                $http.post(domain + 'api/event/' + eventId + '/remove', {data: JSON.stringify({remove: rmArr})}).then(function (suc) {
+                    callback(true);
+                }, function (err) {
+                    if (checkErr(err)) callback(false);
+                });
+            } else {
                 callback(true);
-            }, function (err) {
-                if (checkErr(err)) callback(false);
-            });
+            }
         },
         uploadAddEvent: function (eventName, eventTime, callback) {
-            $http.post(domain + 'api/event/add', {eventName: eventName, eventTime: eventTime.toString()}).then(function (suc) {
+            $http.post(domain + 'api/event/add', {
+                eventName: eventName,
+                eventTime: eventTime.toString()
+            }).then(function (suc) {
                 callback(suc.data);
             }, function (err) {
                 if (checkErr(err)) callback(null);
@@ -396,12 +406,12 @@ app.factory('LS', function ($window, $rootScope) {
     //     }
     // });
     return {
-        set: function(key, val) {
+        set: function (key, val) {
             $window.localStorage.setItem(key, val);
             return this;
         },
-        get: function(key, defaul) {
-            if (defaul !== null && defaul !== undefined && $window.localStorage.getItem(key) === null){
+        get: function (key, defaul) {
+            if (defaul !== null && defaul !== undefined && $window.localStorage.getItem(key) === null) {
                 $window.localStorage.setItem(defaul);
             }
             return $window.localStorage.getItem(key);
@@ -451,12 +461,12 @@ app.config(function ($routeProvider) {
             controller: 'indexCtrl'
         });
 });
-app.config(function(toastrConfig) {
-    if (window.localStorage.getItem('progress-bar')===null){
-        window.localStorage.setItem('progress-bar',true);
+app.config(function (toastrConfig) {
+    if (window.localStorage.getItem('progress-bar') === null) {
+        window.localStorage.setItem('progress-bar', true);
     }
-    if (window.localStorage.getItem('hide-repeat')===null){
-        window.localStorage.setItem('hide-repeat',false);
+    if (window.localStorage.getItem('hide-repeat') === null) {
+        window.localStorage.setItem('hide-repeat', false);
     }
     angular.extend(toastrConfig, {
         autoDismiss: false,
@@ -496,8 +506,14 @@ app.controller("navbarCtrl", function ($rootScope, $scope, $http, session, $loca
         if ($scope.isLoggedIn) {
             session.clear();
             $rootScope.isLoggedIn = false;
-            if (intervalId){clearInterval(intervalId); intervalId = undefined;}
-            if (progressInterval){clearInterval(progressInterval); progressInterval = undefined;}
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = undefined;
+            }
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = undefined;
+            }
             toastr.info('You have logged out');
             $location.url('/home');
         } else {
@@ -506,9 +522,15 @@ app.controller("navbarCtrl", function ($rootScope, $scope, $http, session, $loca
     };
 
     let list = function (evokeChange) {
-        if (evokeChange){
-            if (intervalId){clearInterval(intervalId); intervalId = undefined;}
-            if (progressInterval){clearInterval(progressInterval); progressInterval = undefined;}
+        if (evokeChange) {
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = undefined;
+            }
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = undefined;
+            }
         }
         let url = '';
         switch ('/' + $location.url().split('/')[1]) {
@@ -519,10 +541,12 @@ app.controller("navbarCtrl", function ($rootScope, $scope, $http, session, $loca
                 url = '/home';
                 break;
             case '/checkin':
-                if ($rootScope.isLoggedIn){
+                if ($rootScope.isLoggedIn) {
                     url = '/event';
                 }
-                else {url = '/home';}
+                else {
+                    url = '/home';
+                }
                 break;
             case '/advanced':
                 url = '/home';
@@ -550,16 +574,16 @@ app.controller("navbarCtrl", function ($rootScope, $scope, $http, session, $loca
     };
 });
 app.controller('indexCtrl', function ($rootScope) {
-    if (window.localStorage.getItem('show-add-student')===null){
-        window.localStorage.setItem('show-add-student',true);
+    if (window.localStorage.getItem('show-add-student') === null) {
+        window.localStorage.setItem('show-add-student', true);
     }
-    if (window.localStorage.getItem('show-rm-student')===null){
-        window.localStorage.setItem('show-rm-student',true);
+    if (window.localStorage.getItem('show-rm-student') === null) {
+        window.localStorage.setItem('show-rm-student', true);
     }
-    if (window.localStorage.getItem('show-reg-student')===null){
-        window.localStorage.setItem('show-reg-student',true);
+    if (window.localStorage.getItem('show-reg-student') === null) {
+        window.localStorage.setItem('show-reg-student', true);
     }
-    db = new sqlite3.Database(path.join(dataPath,'AOFCheckDB.db'), function (error) {
+    db = new sqlite3.Database(path.join(dataPath, 'AOFCheckDB.db'), function (error) {
         if (error) console.warn("Failed to initialize database :" + error);
         else {
             db.exec(
@@ -590,18 +614,18 @@ app.controller('indexCtrl', function ($rootScope) {
                     if (error) console.warn("Failed to create table: " + error);
                     else {
                         $rootScope.localEvent = undefined;
-                        db.get('SELECT * FROM `EVENTS`',[],function (err, row) {
-                            if (row){
+                        db.get('SELECT * FROM `EVENTS`', [], function (err, row) {
+                            if (row) {
                                 $rootScope.localEvent = {
-                                    eventId : row.eventId,
-                                    eventName : row.eventName,
-                                    eventTime : row.eventTime,
-                                    token : row.token,
-                                    eventStatus : row.status
+                                    eventId: row.eventId,
+                                    eventName: row.eventName,
+                                    eventTime: row.eventTime,
+                                    token: row.token,
+                                    eventStatus: row.status
                                 };
                             }
-                            db.get("SELECT count(*) AS cnt FROM `StudentInfo`",[],function (err, row) {
-                                if (!row.cnt){
+                            db.get("SELECT count(*) AS cnt FROM `StudentInfo`", [], function (err, row) {
+                                if (!row.cnt) {
                                     needDownloadDB = true;
                                 }
                                 window.location.href = "#/login";
@@ -629,35 +653,37 @@ app.controller('loginCtrl', function ($scope, $http, session, $rootScope, toastr
                 function (failResult) {
                     $scope.password = "";
                     $scope.isLoggingIn = false;
-                    toastr.error("Sign In Failed: " + JSON.stringify(failResult.data),{timeOut:10000});
+                    toastr.error("Sign In Failed: " + JSON.stringify(failResult.data), {timeOut: 10000});
                 });
     }
 });
 app.controller('homeCtrl', function ($scope, $rootScope, toastr, syncManager) {
-    if (needDownloadDB){
-        if ($rootScope.isLoggedIn){
+    if (needDownloadDB) {
+        if ($rootScope.isLoggedIn) {
             if (!$rootScope.downloadStudentInfoInProgress) {
                 $rootScope.downloadStudentInfoInProgress = true;
                 syncManager.downloadStudentInfo(function (ret) {
-                    if (ret){
+                    if (ret) {
                         needDownloadDB = false;
                         $rootScope.downloadStudentInfoInProgress = false;
-                    }else {
+                    } else {
                         toastr.warning('Failed to download DB!');
                     }
                 });
             }
-        }else {toastr.warning('Your database is empty! please log in!');}
+        } else {
+            toastr.warning('Your database is empty! please log in!');
+        }
     }
     $scope.goCheckin = function () {
         if (!$rootScope.localEvent) {
             if ($rootScope.isLoggedIn)
                 window.location.href = "#/event";
             else
-                toastr.warning("Please log in and go to Events menu to check out an event!",{timeOut:10000});
+                toastr.warning("Please log in and go to Events menu to check out an event!", {timeOut: 10000});
         } else {
             if
-            ($rootScope.isLoggedIn) toastr.warning("Please go to Events menu to give back the local event!",{timeOut:10000});
+            ($rootScope.isLoggedIn) toastr.warning("Please go to Events menu to give back the local event!", {timeOut: 10000});
             else {
                 toastr.info('You are checking in for event "' + $rootScope.localEvent.eventName + '"');
                 window.location.href = "#/checkin/" + $rootScope.localEvent.eventId;
@@ -672,10 +698,10 @@ app.controller('homeCtrl', function ($scope, $rootScope, toastr, syncManager) {
     };
     $scope.goReg = function () {
         if ($rootScope.isLoggedIn) {
-            if (!$rootScope.localEvent){
+            if (!$rootScope.localEvent) {
                 window.location.href = "#/register";
-            }else {
-                toastr.warning("Please go to Events menu to give back the local event!",{timeOut:10000});
+            } else {
+                toastr.warning("Please go to Events menu to give back the local event!", {timeOut: 10000});
             }
         }
     };
@@ -692,10 +718,10 @@ app.controller('eventCtrl', function ($scope, $http, syncManager, toastr, $rootS
 
     let updateEvents = function () {
         syncManager.downloadEvents(function (ret1) {
-            if (ret1){
+            if (ret1) {
                 $scope.events = ret1;
-            }else {
-                toastr.error('Failed to fetch event list!',{timeOut:10000});
+            } else {
+                toastr.error('Failed to fetch event list!', {timeOut: 10000});
             }
             updated = true;
         });
@@ -710,7 +736,7 @@ app.controller('eventCtrl', function ($scope, $http, syncManager, toastr, $rootS
     };
     $scope.continueEvent = function () {
         console.log($scope.selected.eventId);
-        toastr.info('You are checking in for event "' + $scope.selected.eventName + '"',{timeOut:10000});
+        toastr.info('You are checking in for event "' + $scope.selected.eventName + '"', {timeOut: 10000});
         $rootScope.eventName = $scope.selected.eventName;
         window.location.href = "#/checkin/" + $scope.selected.eventId;
     };
@@ -728,9 +754,9 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     let lastUpdate = 0;
 
     db.all("SELECT * FROM `StudentInfo`", function (err, rows) {
-        if (!rows){
-            toastr.error('Database is empty! Please go to Advanced -> Download Students',{timeOut:10000});
-        }else {
+        if (!rows) {
+            toastr.error('Database is empty! Please go to Advanced -> Download Students', {timeOut: 10000});
+        } else {
             rows.forEach(function (row) {
                 $scope.students.push({
                     id: row.id,
@@ -747,11 +773,13 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
 
         if ($rootScope.isLoggedIn) {
             updateEventStudents();
-            intervalId = setInterval(function(){updateEventStudents();},5000);
+            intervalId = setInterval(function () {
+                updateEventStudents();
+            }, 5000);
             progressInterval = setInterval(function () {
-                $scope.refreshProgress = 100 - (new Date().getTime() - lastUpdate)/50;
+                $scope.refreshProgress = 100 - (new Date().getTime() - lastUpdate) / 50;
                 $scope.$apply();
-            },50);
+            }, 50);
         }
         else {
             db.all("SELECT * FROM `StudentCheck` WHERE `eventId` = ?", [eventId], function (err, rows) {
@@ -775,7 +803,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
         console.log('Students updated');
         syncManager.downloadEventStudents(eventId, function (ret) {
             if (ret != null) {
-                for (let k = 0; k < $scope.students.length; k++){
+                for (let k = 0; k < $scope.students.length; k++) {
                     let found = false;
                     for (let i = 0; i < ret.length; i++) {
                         if ($scope.students[k].id === ret[i].studentId) {
@@ -785,7 +813,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                             break;
                         }
                     }
-                    if (!found){
+                    if (!found) {
                         $scope.students[k].inTime = '';
                         $scope.students[k].outTime = '';
                     }
@@ -836,20 +864,20 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
             } else {
                 //offline
                 let time = new Date().getTime().toString();
-                db.get("SELECT * FROM `StudentCheck` WHERE `id` = ? AND `eventId` = ?",[stu.id,eventId],function (err, row) {
-                    if (!err){
-                        db.run("INSERT OR REPLACE INTO `StudentCheck` ('id','eventId','inTime','outTime','status') VALUES (?,?,?,?,?)", [stu.id, eventId, time, stu.outTime, row?parseInt(row.status)+1:1], function (err) {
+                db.get("SELECT * FROM `StudentCheck` WHERE `id` = ? AND `eventId` = ?", [stu.id, eventId], function (err, row) {
+                    if (!err) {
+                        db.run("INSERT OR REPLACE INTO `StudentCheck` ('id','eventId','inTime','outTime','status') VALUES (?,?,?,?,?)", [stu.id, eventId, time, stu.outTime, row ? parseInt(row.status) + 1 : 1], function (err) {
                             if (!err) {
                                 stu.inTime = time;
                                 $scope.q = '';
                                 $scope.networkInProgress = false;
-                                if(LS.get('show-add-student')=='true')toastr.success(stu.nickName + " is checked in!");
+                                if (LS.get('show-add-student') == 'true') toastr.success(stu.nickName + " is checked in!");
                                 showStudent(stu, false);
-                            }else {
+                            } else {
                                 throw err;
                             }
                         });
-                    }else {
+                    } else {
                         throw err;
                     }
                 });
@@ -872,14 +900,14 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                             $scope.networkInProgress = false;
                             $scope.q = '';
                             showStudent(s, true);
-                            if(LS.get('show-add-student')=='true')toastr.success(s.nickName + " is checked in!");
+                            if (LS.get('show-add-student') == 'true') toastr.success(s.nickName + " is checked in!");
                             break;
                         }
                     }
                 }
             });
         } else {
-            toastr.error(s.nickName + " is not checked in due to network error! Please try again!",{timeOut:10000});
+            toastr.error(s.nickName + " is not checked in due to network error! Please try again!", {timeOut: 10000});
             $scope.networkInProgress = false;
         }
     };
@@ -888,9 +916,9 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     let showStudent = function (student, changed) {
         if (dispTimeout !== undefined)
             clearTimeout(dispTimeout);
-        if (fs.existsSync(photoPath + '/' + student.id + '.jpg')){
+        if (fs.existsSync(photoPath + '/' + student.id + '.jpg')) {
             $scope.pic = photoPath + '/' + student.id + '.jpg';
-        }else {
+        } else {
             $scope.pic = 'http://wiki.bdtnrm.org.au/images/8/8d/Empty_profile.jpg';
             toastr.error('Photo not found, please go to Advanced -> Download Photos');
         }
@@ -920,7 +948,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                     console.log(stu + " removed");
                     $scope.q = '';
                     $scope.networkInProgress = false;
-                    if(LS.get('show-rm-student')=='true')toastr.success(stu.nickName + " is removed!");
+                    if (LS.get('show-rm-student') == 'true') toastr.success(stu.nickName + " is removed!");
                     showStudent(stu, false);
                 }
             });
@@ -939,7 +967,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                             $scope.networkInProgress = false;
                             console.log($scope.students[i].firstName + " removed");
                             $scope.q = '';
-                            if(LS.get('show-rm-student')=='true')toastr.success(s.nickName + " is removed!");
+                            if (LS.get('show-rm-student') == 'true') toastr.success(s.nickName + " is removed!");
                             showStudent($scope.students[i], true);
                             break;
                         }
@@ -947,7 +975,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                 }
             });
         } else {
-            toastr.error(s.nickName + " is not removed due to network error! Please try again!",{timeOut:10000});
+            toastr.error(s.nickName + " is not removed due to network error! Please try again!", {timeOut: 10000});
             $scope.networkInProgress = false;
         }
     };
@@ -963,7 +991,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                 db.run("UPDATE `StudentInfo` SET `rfid` = ? WHERE `id` = ?", [rfid.toUpperCase(), stu.id]);
                 $scope.registerRFID = undefined;
                 stu.rfid = rfid;
-                if(LS.get('show-reg-student')=='true')toastr.success(stu.nickName + " is registered!");
+                if (LS.get('show-reg-student') == 'true') toastr.success(stu.nickName + " is registered!");
             });
         }
 
@@ -979,7 +1007,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                         if (s.id == $scope.students[i].id) {
                             $scope.registerRFID = undefined;
                             $scope.students[i].rfid = s.rfid;
-                            if(LS.get('show-reg-student')=='true')toastr.success(s.nickName + " is registered!");
+                            if (LS.get('show-reg-student') == 'true') toastr.success(s.nickName + " is registered!");
                             break;
                         }
                     }
@@ -987,7 +1015,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                 }
             });
         } else {
-            toastr.error(s.nickName + " is not registered due to network error! Please try again!",{timeOut:10000});
+            toastr.error(s.nickName + " is not registered due to network error! Please try again!", {timeOut: 10000});
             $scope.networkInProgress = false;
         }
     };
@@ -1053,36 +1081,36 @@ app.controller('advancedCtrl', function ($scope, syncManager, toastr, $rootScope
     $scope.uploadRegister = function () {
         if (!$rootScope.uploadRegisterInProgress) {
             $rootScope.uploadRegisterInProgress = true;
-            db.all("SELECT * FROM `StudentReg`",[],function (err, rows) {
-                if (rows.length > 0){
+            db.all("SELECT * FROM `StudentReg`", [], function (err, rows) {
+                if (rows.length > 0) {
                     let cnt = 0;
                     rows.forEach(function (row) {
                         syncManager.uploadRegister(row.id, row.rfid, function (ret) {
-                            if (ret){
+                            if (ret) {
                                 syncManager.backup(function (backUpSuc) {
-                                    if (backUpSuc){
-                                        db.run("DELETE FROM `StudentReg` WHERE `id` = ?",[row.id],function (err) {
+                                    if (backUpSuc) {
+                                        db.run("DELETE FROM `StudentReg` WHERE `id` = ?", [row.id], function (err) {
                                             cnt += 1;
-                                            if (cnt >= rows.length){
+                                            if (cnt >= rows.length) {
                                                 $rootScope.uploadRegisterInProgress = false;
                                                 $scope.$apply();
                                             }
                                         });
-                                    }else {
+                                    } else {
                                         toastr.error('Backup failed! DB modification aborted!');
                                     }
                                 });
-                            }else {
+                            } else {
                                 toastr.error('Failed uploading a student... Try do it again');
                                 cnt += 1;
-                                if (cnt >= rows.length){
+                                if (cnt >= rows.length) {
                                     $rootScope.uploadRegisterInProgress = false;
                                     $scope.$apply();
                                 }
                             }
                         });
                     });
-                }else {
+                } else {
                     toastr.info('No need for upload!');
                     $rootScope.uploadRegisterInProgress = false;
                     $scope.$apply();
@@ -1099,35 +1127,35 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
     $scope.events = [];
     $scope.eventName = '';
     $scope.networkInProgress = true;
-    $scope.selectedDate = new Date().getTime()/1000|0;
+    $scope.selectedDate = new Date().getTime() / 1000 | 0;
 
     let lastUpdate = 0;
 
-    $scope.openDate = function(){
+    $scope.openDate = function () {
         $scope.dateOpened = true;
     };
 
     $scope.onTimeSet = function (newDate, oldDate) {
         // console.log(newDate);
         $scope.dateOpened = false;
-        $scope.selectedDate = new Date(newDate).getTime()/1000|0;
+        $scope.selectedDate = new Date(newDate).getTime() / 1000 | 0;
     };
 
-    if ($rootScope.localEvent){
-        toastr.info('You have a local event "'+ $rootScope.localEvent.eventName + '"');
+    if ($rootScope.localEvent) {
+        toastr.info('You have a local event "' + $rootScope.localEvent.eventName + '"');
     }
 
     let updateEvents = function () {
         syncManager.downloadEvents(function (ret1) {
-            if (ret1 === null){
-                toastr.error('Failed to fetch event list!',{timeOut:10000});
-            }else {
+            if (ret1 === null) {
+                toastr.error('Failed to fetch event list!', {timeOut: 10000});
+            } else {
                 // console.log("Receiving:" + JSON.stringify(ret1));
                 let needRm = [];
                 $scope.events.forEach(function (existEvt) {
                     let rm = true;
-                    for(let i = 0; i < ret1.length; i++){
-                        if (ret1[i].eventId === existEvt.eventId){
+                    for (let i = 0; i < ret1.length; i++) {
+                        if (ret1[i].eventId === existEvt.eventId) {
                             existEvt.eventName = ret1[i].eventName;
                             existEvt.eventTime = ret1[i].eventTime;
                             existEvt.eventStatus = ret1[i].eventStatus;
@@ -1137,8 +1165,8 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                             break;
                         }
                     }
-                    if (rm){
-                        if ($scope.selected === existEvt){
+                    if (rm) {
+                        if ($scope.selected === existEvt) {
                             $scope.selected = undefined;
                         }
                         // console.log("Remove event:" + existEvt.eventName);
@@ -1146,7 +1174,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                     }
                 });
                 needRm.forEach(function (val) {
-                    $scope.events.splice(val,1);
+                    $scope.events.splice(val, 1);
                 });
                 // console.log("Add New Events:" + JSON.stringify(ret1));
                 $scope.events = ret1.concat($scope.events);
@@ -1155,15 +1183,15 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
             lastUpdate = new Date().getTime();
         });
     };
-    if ($rootScope.isLoggedIn){
+    if ($rootScope.isLoggedIn) {
         updateEvents();
         intervalId = setInterval(function () {
             updateEvents();
-        },10000);
+        }, 10000);
         progressInterval = setInterval(function () {
-            $scope.refreshProgress = 100 - (new Date().getTime() - lastUpdate)/100;
+            $scope.refreshProgress = 100 - (new Date().getTime() - lastUpdate) / 100;
             $scope.$apply();
-        },50);
+        }, 50);
     }
 
     $scope.selectItem = function (item) {
@@ -1186,8 +1214,8 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                 updateEvents();
                 $scope.networkInProgress = false;
                 $scope.eventName = '';
-            }else {
-                toastr.error('Failed to add event!',{timeOut:10000});
+            } else {
+                toastr.error('Failed to add event!', {timeOut: 10000});
                 $scope.networkInProgress = false;
             }
         });
@@ -1195,9 +1223,9 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
 
     $scope.confirmingComplete = false;
     $scope.makeSureComplete = function () {
-        if ($scope.confirmingComplete){
+        if ($scope.confirmingComplete) {
             completeEvent();
-        }else {
+        } else {
             $scope.confirmingComplete = true;
         }
         // toastr.info('Click here to confirm complete!',{
@@ -1215,7 +1243,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                 toastr.success('Completed event "' + evt.eventName + '"');
                 updateEvents();
                 $scope.networkInProgress = false;
-            }else {
+            } else {
                 toastr.error('Failed to completed event "' + evt.eventName + '" !');
                 $scope.networkInProgress = false;
             }
@@ -1248,7 +1276,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                     }
                 });
             } else {
-                toastr.error("Check out failed!",{timeOut:10000});
+                toastr.error("Check out failed!", {timeOut: 10000});
                 $scope.networkInProgress = false;
             }
         });
@@ -1266,14 +1294,15 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                     inTime: row.inTime,
                     outTime: row.outTime
                 };
-                if (row.status === 1){
+                if (row.status === 1) {
                     add.push(stu);
-                }else if(row.status === -1){
+                } else if (row.status === -1) {
                     rm.push(stu);
                 }
             });
             // console.log(add.length);
             // console.log("add array created");
+            // console.log("rm:"+rm);
             db.all("SELECT * FROM `StudentReg`", [], function (err, rows) {
                 rows.forEach(function (row) {
                     reg.push({
@@ -1292,15 +1321,15 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
             // console.log("uploadGiveBackEvent");
             if (ret) {
                 syncManager.backup(function (backUpSuc) {
-                    if (backUpSuc){
+                    if (backUpSuc) {
                         db.run("DELETE FROM `Events` WHERE `eventId` = ?", [evt.eventId], function (err) {
                             if (!err) {
                                 $rootScope.localEvent = undefined;
                                 syncManager.uploadAddStudent(add, evt.eventId, function (ret) {
                                     // console.log("uploadAddStudent");
                                     if (ret) {
-                                        syncManager.uploadRemoveStudent(rm, event.eventId, function (ret) {
-                                            if (ret){
+                                        syncManager.uploadRemoveStudent(rm, evt.eventId, function (ret) {
+                                            if (ret) {
                                                 db.run("DELETE FROM `StudentCheck` WHERE `eventId` = ?", [evt.eventId], function (err) {
                                                     // console.log("DELETE FROM `StudentCheck`");
                                                     if (!err) {
@@ -1326,7 +1355,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                                                                         });
                                                                     } else {
                                                                         // console.warn("update " + stu.id + " failed!");
-                                                                        toastr.warning("Upload register error! Please go to advanced!",{timeOut:10000});
+                                                                        toastr.warning("Upload register error! Please go to advanced!", {timeOut: 10000});
                                                                         if (cnt >= reg.length) {
                                                                             toastr.success('Give back event "' + evt.eventName + '"');
                                                                             updateEvents();
@@ -1337,36 +1366,36 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                                                                 });
                                                             });
                                                         }
-                                                    }else {
-                                                        toastr.error("Database error!",{timeOut:10000});
+                                                    } else {
+                                                        toastr.error("Database error!", {timeOut: 10000});
                                                         $scope.networkInProgress = false;
                                                         $scope.selected = undefined;
                                                     }
                                                 });
-                                            }else {
-                                                toastr.error("Remove students failed!",{timeOut:10000});
+                                            } else {
+                                                toastr.error("Remove students failed!", {timeOut: 10000});
                                                 $scope.networkInProgress = false;
                                                 $scope.selected = undefined;
                                             }
                                         });
-                                    }else {
-                                        toastr.error("Add students failed!",{timeOut:10000});
+                                    } else {
+                                        toastr.error("Add students failed!", {timeOut: 10000});
                                         $scope.networkInProgress = false;
                                         $scope.selected = undefined;
                                     }
                                 });
-                            }else {
-                                toastr.error("Database error!",{timeOut:10000});
+                            } else {
+                                toastr.error("Database error!", {timeOut: 10000});
                                 $scope.networkInProgress = false;
                                 $scope.selected = undefined;
                             }
                         });
-                    }else {
-                        toastr.error('Backup failed! DB modification aborted!',{timeOut:10000});
+                    } else {
+                        toastr.error('Backup failed! DB modification aborted!', {timeOut: 10000});
                     }
                 });
-            }else {
-                toastr.error("Give back event failed!",{timeOut:10000});
+            } else {
+                toastr.error("Give back event failed!", {timeOut: 10000});
                 $scope.networkInProgress = false;
                 $scope.selected = undefined;
             }
@@ -1378,11 +1407,11 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
         $scope.networkInProgress = true;
         let evt = angular.copy($scope.selected);
         let adr = angular.copy($scope.emailAdr.split(','));
-        syncManager.sendEmails(adr,evt,function (ret) {
-            if (ret){
+        syncManager.sendEmails(adr, evt, function (ret) {
+            if (ret) {
                 toastr.success('Emails sent!');
                 $scope.emailAdr = '';
-            }else {
+            } else {
                 toastr.error('Emails failed to send!');
             }
             $scope.networkInProgress = false;
@@ -1459,9 +1488,9 @@ app.controller('regCtrl', function ($scope, syncManager, $rootScope, toastr) {
     let showStudent = function (student, changed) {
         if (dispTimeout !== undefined)
             clearTimeout(dispTimeout);
-        if (fs.existsSync(photoPath + '/' + student.id + '.jpg')){
+        if (fs.existsSync(photoPath + '/' + student.id + '.jpg')) {
             $scope.pic = photoPath + '/' + student.id + '.jpg';
-        }else {
+        } else {
             $scope.pic = 'http://wiki.bdtnrm.org.au/images/8/8d/Empty_profile.jpg';
             toastr.error('Photo not found, please go to Advanced -> Download Photos');
         }
@@ -1504,32 +1533,32 @@ app.controller('regCtrl', function ($scope, syncManager, $rootScope, toastr) {
                 }
             });
         } else {
-            toastr.error(s.nickName + " is not registered due to network error! Please try again!",{timeOut:10000});
+            toastr.error(s.nickName + " is not registered due to network error! Please try again!", {timeOut: 10000});
             $scope.networkInProgress = false;
         }
     };
 
 });
 app.controller('settingsCtrl', function ($scope, $window, LS) {
-    $scope.showAddStudent = LS.get('show-add-student',true) == "true";
-    $scope.showRmStudent = LS.get('show-rm-student',true) == "true";
-    $scope.showRegStudent = LS.get('show-reg-student',true) == "true";
-    $scope.hideRepeat = LS.get('hide-repeat',false) == "true";
-    $scope.progressBar = LS.get('progress-bar',true) == "true";
-    $scope.addStudentChange = function(){
-        LS.set('show-add-student',$scope.showAddStudent);
+    $scope.showAddStudent = LS.get('show-add-student', true) == "true";
+    $scope.showRmStudent = LS.get('show-rm-student', true) == "true";
+    $scope.showRegStudent = LS.get('show-reg-student', true) == "true";
+    $scope.hideRepeat = LS.get('hide-repeat', false) == "true";
+    $scope.progressBar = LS.get('progress-bar', true) == "true";
+    $scope.addStudentChange = function () {
+        LS.set('show-add-student', $scope.showAddStudent);
     };
-    $scope.rmStudentChange = function(){
-        LS.set('show-rm-student',$scope.showRmStudent);
+    $scope.rmStudentChange = function () {
+        LS.set('show-rm-student', $scope.showRmStudent);
     };
-    $scope.regStudentChange = function(){
-        LS.set('show-reg-student',$scope.showRegStudent);
+    $scope.regStudentChange = function () {
+        LS.set('show-reg-student', $scope.showRegStudent);
     };
-    $scope.hideRepeatChange = function(){
-        LS.set('hide-repeat',$scope.hideRepeat);
+    $scope.hideRepeatChange = function () {
+        LS.set('hide-repeat', $scope.hideRepeat);
     };
-    $scope.progressBarChange = function(){
-        LS.set('progress-bar',$scope.progressBar);
+    $scope.progressBarChange = function () {
+        LS.set('progress-bar', $scope.progressBar);
     };
     $scope.dataPath = dataPath;
 });
