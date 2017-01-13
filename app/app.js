@@ -27,7 +27,7 @@ let standardize = function (s) {
 
 const fx = {
     succeed: 'Ping',
-    failed: 'Basso',
+    failed: 'Buzz',
     warn: 'Glass',
     info: 'Morse'
 };
