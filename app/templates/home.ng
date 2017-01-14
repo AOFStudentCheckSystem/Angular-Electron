@@ -31,12 +31,15 @@
             </a>
         </div>
         <div class="col-xs-12 col-sm-6 col-lg-4">
-            <div class="panel panel-default">
-                <div class="panel-body text-center">
-                    <i class="fa fa-refresh fa-icon" ng-class="{'fa-spin':downloadStudentInfoInProgress}"></i>
-                    <h1>{{downloadStudentInfoInProgress?"Syncing...":"Synced!"}}</h1>
+            <a ng-click="updateDB()" style="cursor:pointer" ng-class="{'disabled-panel':!isLoggedIn}">
+                <div class="panel panel-default">
+                    <div class="panel-body text-center">
+                        <i class="fa fa-refresh fa-icon" ng-class="{'fa-spin':downloadStudentInfoInProgress}"></i>
+                        <h1>{{downloadStudentInfoInProgress?"Syncing...":
+                            (needDownloadDB?"Update Database":"Synced!")}}</h1>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
         <div class="col-xs-12 col-sm-6 col-lg-4">
             <a style="cursor:pointer" href="#/settings">
