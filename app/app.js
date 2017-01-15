@@ -14,7 +14,7 @@ let needInit = false;
 const dataPath = path.join(eapp.getPath('appData'), 'student-check-electron-angular');
 const photoPath = path.join(dataPath, 'pics');
 ///Users/liupeiqi/Library/Application Support/student-check-electron-angular/pics
-const domain = "http://hn2.guardiantech.com.cn:10492/v2/";
+const domain = "http://aofcheckproxy.codetector.cn:10492/v2/";
 const placeHolderPic = 'http://placehold.it/300x450';
 
 /**
