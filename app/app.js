@@ -750,6 +750,9 @@ app.controller('homeCtrl', function ($scope, $rootScope, toastr, syncManager) {
         if ($rootScope.isLoggedIn) {
             window.location.href = "#/advanced";
         }
+    };
+    $scope.quit = function () {
+        eapp.quit();
     }
 });
 app.controller('eventCtrl', function ($scope, $http, syncManager, toastr, $rootScope) {
