@@ -15,7 +15,7 @@ const dataPath = path.join(eapp.getPath('appData'), 'student-check-electron-angu
 const photoPath = path.join(dataPath, 'pics');
 ///Users/liupeiqi/Library/Application Support/student-check-electron-angular/pics
 const domain = "http://aofcheckproxy.codetector.cn:10492/v2/";
-const placeHolderPic = 'http://placehold.it/300x450';
+const placeHolderPic = 'pics/pholder.png';
 
 /**
  * standardize nulls
@@ -899,6 +899,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
     };
 
     $scope.checkinStudent = function (stu) {
+
         $scope.networkInProgress = true;
         if ($scope.registerRFID) {
             registerStudent(stu, $scope.registerRFID, function () {
@@ -916,7 +917,7 @@ app.controller('checkinCtrl', function ($scope, $routeParams, session, syncManag
                     let time = new Date().getTime().toString();
                     db.get("SELECT * FROM `StudentCheck` WHERE `id` = ? AND `eventId` = ?", [stu.id, eventId], function (err, row) {
                         if (!err) {
-                            db.run("INSERT OR REPLACE INTO `StudentCheck` ('id','eventId','inTime','outTime','status') VALUES (?,?,?,?,?)", [stu.id, eventId, time, stu.outTime, row ? parseInt(row.status) + 1 : 1], function (err) {
+                            db.run("INSERT OR IGNORE INTO `StudentCheck` ('id','eventId','inTime','outTime','status') VALUES (?,?,?,?,?)", [stu.id, eventId, time, stu.outTime, row ? parseInt(row.status) + 1 : 1], function (err) {
                                 if (!err) {
                                     stu.inTime = time;
                                     $scope.q = '';
@@ -1356,11 +1357,20 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
                             });
                             stmt.finalize();
                             db.run("COMMIT");
+
+                            updateEvents();
                             play(fx.succeed);
                             toastr.success('Check out event "' + evt.eventName + '"');
-                            updateEvents();
                             $scope.selected = undefined;
-                            $scope.networkInProgress = false;
+
+                            syncManager.downloadStudentInfo(function (ret) {
+                                if (!ret) {
+                                    play(fx.warn);
+                                    toastr.warning('Student database download failed, please manually update!');
+                                }
+                                $scope.networkInProgress = false;
+                            });
+
                         });
                     }
                 });
@@ -1502,7 +1512,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
         });
     };
 
-    $scope.emailAdr = '';
+    $scope.emailAdr = 'tumperis@avonoldfarms.com';
     $scope.sendEmail = function () {
         $scope.networkInProgress = true;
         let evt = angular.copy($scope.selected);
@@ -1511,7 +1521,7 @@ app.controller('eventsCtrl', function ($scope, $http, syncManager, toastr, $root
             if (ret) {
                 play(fx.succeed);
                 toastr.success('Emails sent!');
-                $scope.emailAdr = '';
+                $scope.emailAdr = 'tumperis@avonoldfarms.com';
             } else {
                 play(fx.failed);
                 toastr.error('Emails failed to send!');
